@@ -1,0 +1,963 @@
+const typeDefs = `
+  scalar Date
+  
+  type Query {
+   
+    getProjectById(id: ID!): Project
+    getProject(page: Int, rows: Int, search: String): ProjectResult!
+    Warehousebyid(id: ID!): Warehouse
+    getWarehouse(page: Int, rows: Int, search: String): WarehouseResult!
+    getPartyEntryById(id: ID!): PartyEntry
+    getPartyEntry(page: Int, rows: Int, search: String, acctype: String): PartyEntryResult!    
+    getTaskById(id: ID!): Task
+    getTask(page: Int, rows: Int, search: String): TaskResult!
+    getCategory(page: Int, rows: Int, search: String): CategoryResult!
+    categorybyid(id: ID!): Category
+    getExpcategory(page: Int, rows: Int, search: String): ExpCategoryResult!
+    Expcategorybyid(id: ID!): ExpCategory
+    getBrands(page: Int, rows: Int, search: String): BrandResult!
+    brandsbyid(id: ID!): Brand
+    getUnits(page: Int, rows: Int, search: String): UnitResult!
+    unitsbyid(id: ID!): Unit
+    getItems(page: Int, rows: Int, search: String): ItemResult!
+    getStocks(warehouseId: String, cateid: String, brandid: String, page: Int): StockData
+    itemById(id: ID!): ItemWithName
+    getSaleBill(page: Int, rows: Int, search: String): BillSaleResult!
+    saleBillById(id: ID!): BillSaleWithName
+    getSaleReturnBill(page: Int, rows: Int, search: String): BillSaleReturnResult!
+    saleReturnBillById(id: ID!): BillReturnSaleWithName
+    getPurchanseBill(page: Int, rows: Int, search: String): BillPurchaseResult!
+    billPurchaseById(id: ID!): BillPurchase
+    getPurchaseReturnBill(page: Int, rows: Int, search: String): BillPurchaseReturnResult!
+    billPurchaseReturnById(id: ID!): BillPurchaseReturn
+    getquotationBill(page: Int, rows: Int, search: String): QuotationBillResult!
+    getTransferBill(page: Int, rows: Int, search: String): TransferBillResult!
+    getAdjustmentBill(page: Int, rows: Int, search: String): AdjustmentBillResult!
+    getTasksByProjectId(projectid: ID!): [Task]
+    getExpenseEntryById(id: ID!): ExpenseEntryWiteName
+    getExpenseEntries(page: Int, rows: Int, search: String): ExpenseEntriesResponse!
+    getSellerById: Seller!
+    getUserById: [User]
+
+
+ 
+    ReportgetsaleBills(warehouseId:ID,customerId:ID,userIds:ID,paymentStatus:String, startDate: String, endDate: String, page: Int): SaleBillReport! 
+    ReportTotalPendingCash: Float!
+    ReportTotalSales: Float!
+    ReportTodaySales: Float!
+    ReportPreviousDaySales: Float!
+    ReportgetsalereturnBills(warehouseId:ID,customerId:ID,userIds:ID,paymentStatus:String, startDate: String, endDate: String, page: Int): SaleReturnBillReport!
+    ReportTotalPendingsalereturnCash: Float!
+    ReportTotalsalereturn: Float!
+
+    ReportgetsalePurchaseBills(warehouseId:ID,customerId:ID,userIds:ID,paymentStatus:String, startDate: String, endDate: String, page: Int): SaleBillPurchaseReport!
+    ReportTotalPendingPurchaseCash: Float!
+    ReportTotalPurchase: Float!
+
+    ReportgetPurchasereturnBills(warehouseId:ID,customerId:ID,userIds:ID,paymentStatus:String, startDate: String, endDate: String, page: Int): PurchasereturnBills!
+    ReportTotalPendingpurchasereturnCash: Float!
+    ReportTotalPurchasereturn: Float!
+
+    ReportgetExpense(warehouseId: ID, customerId: ID, startDate: String, endDate: String, page: Int): PartyEntryReport!
+    ReportTotalExpense: Float!
+    # Add queries with parameters warehouseId and customerId
+    LedgerTotalPurchasepay(warehouseId: ID!, customerId: ID!): Float
+    LedgerotalPurchasereturnpay(warehouseId: ID!, customerId: ID!): Float
+    LedgerToatalSalpay(warehouseId: ID, customerId: ID): Float
+    Ledgerotalsalereturnpay(warehouseId: ID, customerId: ID): Float
+}
+type StockData {
+  stockItems: [Stock]
+  totalCount: Int
+}
+type Stock {
+  productId: ItemWithName
+  warehouseId: ID
+  quantity: Int
+  createdAt: String
+}
+type TotalExpense {
+  totalAmount: Float
+}
+
+    type PartyEntryReport {
+    PartyEntry: [ExpenseEntryWiteName]!
+    PartyEntryCount: Int!
+}
+  type SaleBillReport {
+    bills: [BillSaleWithName!]!
+    totalCount: Int!
+  }
+  type SaleReturnBillReport {
+    returnbills: [BillReturnSaleWithName!]!
+    totalreturnCount: Int!
+  }
+  type SaleBillPurchaseReport {
+    bills: [BillPurchase!]!
+    totalCount: Int!
+  }
+  type PurchasereturnBills {
+    bills: [BillPurchaseReturn!]!
+    totalCount: Int!
+  }
+  type PartyEntryResult {
+    PartyEntry: [PartyEntry]!
+    PartyEntryCount: Int!
+  }
+  type AuthPayload {
+    token: String
+    user: User
+    sellerInfo: Seller  # Add sellerInfo field
+  }
+  type PartyEntry {
+    _id: ID!
+    name: String!
+    email: String
+    phoneNumber: String
+    country: String
+    city: String
+    address: String
+    acctype: String
+    partytype: Boolean
+  }
+type ExpenseEntry {
+  _id: ID!
+  date: Date
+  notes: String
+  wareid: String
+  cateid: String
+  amount: Float
+}
+type ExpenseEntryWiteName
+{
+  _id: ID!
+  date: Date
+  notes: String
+  wareid: Warehouse
+  cateid: ExpCategory
+  amount: Float
+}
+
+type ExpenseEntriesResponse {
+  expenseEntries: [ExpenseEntryWiteName]!
+  expenseEntryCount: Int!
+}
+
+input CreateExpenseEntryInput {
+  date: Date
+  notes: String
+  wareid: String
+  cateid: String
+  amount: Float
+}
+
+ type ProjectResult {
+    project: [Project!]!
+    projectcount: Int!
+  }
+  type WarehouseResult {
+    warehouse: [Warehouse!]!
+    warehousecount: Int!
+  }
+  type Warehouse {
+    _id: ID!
+    name: String!
+    location: String
+    createdAt: String!
+  }
+  type Project {
+    _id: ID!
+    title: String!
+    description: String
+    startDate: Date!
+    endDate: Date
+    status: String!
+    userid: String!
+  
+  }
+  type TaskResult {
+    tasks: [Task!]!
+    taskscount: Int!
+  }
+  
+  type ExpCategoryResult {
+    expcategories: [Category!]!
+    expcategoryCount: Int!
+  }
+  
+  type CategoryResult {
+    categories: [Category!]!
+    categoryCount: Int!
+  }
+  type BrandResult {
+    brands: [Brand!]!
+    brandsCount: Int!
+  }
+  type UnitResult {
+    units: [Unit!]!
+    unitsCount: Int!
+  }
+  type ItemResult {
+    items: [ItemWithName!]!
+    itemCount: Int!
+  }
+  type BillSaleResult {
+    saleBills: [BillSaleWithName!]!
+    saleBillCount: Int!
+  }
+  type BillSaleReturnResult {
+    saleReturnBills: [BillReturnSaleWithName!]!
+    saleReturnBillCount: Int!
+  }
+  type BillPurchaseResult{
+    billPurchase: [BillPurchase!]!
+    billPurchaseCount: Int!
+  }
+  type BillPurchaseReturnResult{
+    billPurchaseReturn: [BillPurchaseReturn!]!
+    billPurchaseReturnCount: Int!
+  }
+  type QuotationBillResult{
+    billquotation: [QuotationBillWithName!]!
+    billquotationCount: Int!
+  }
+  type TransferBillResult{
+    billtransfer: [TransferBillWithName!]!
+    billtransferCount: Int!
+  }
+  type AdjustmentBillResult{
+    billadjustment: [AdjustmentBill!]!
+    billadjustmentCount: Int!
+  }
+  type Task {
+    _id: ID!
+    title: String!
+    description: String
+    dueDate: Date!
+    status: String
+    projectid: String!
+    userid: String!
+  }
+  
+  type ItemWithName {
+    _id: ID!
+    productname: String!
+    code: String
+    brandid: Brand
+    cateid: Category
+    unitid: Unit
+    barcode: [String]
+    cost: String
+    price: String
+    wsprice: String
+    discount: String
+    alertqty: String
+    tax: String
+    ordernote: String
+    createdAt: String
+  }
+  
+  type Item {
+    _id: ID!
+    productname: String!
+    code: String
+    brandid: String
+    cateid: String
+    unitid: String
+    barcode: [String]
+    cost: String
+    price: String
+    wsprice: String
+    discount: String
+    alertqty: String
+    tax: String
+    ordernote: String
+  }
+
+  type User {
+    _id: ID!
+    name: String!
+    role: String
+    mobileno: String!
+    password: String!
+    verified: Boolean
+    sellerid:String!
+  }
+
+  type Token {
+    token: String!
+  }
+
+  type Category {
+    _id: ID!
+    name: String!
+    createdAt: String!
+  }
+type ExpCategory {
+    _id: ID!
+    name: String!
+    createdAt: String!
+  }
+
+  type Brand {
+    _id: ID!
+    name: String!
+    createdAt: String!
+  }
+
+  type Unit {
+    _id: ID!
+    name: String!
+    basename: String!
+    createdAt: String!
+  }
+
+  type BillSale {
+    _id: ID!
+    billdate: Date
+    whareid: String
+    custid: String
+    discount: Float
+    saletax: Float
+    shippingcharges: Float
+    totalamount: Float
+    cashreceived: Float
+    billstatus: String
+    paymentstatus: String
+    paymentMode: String
+    notes: String
+    salecart: [SaleCartItem]
+    createdAt: Date
+    updatedAt: Date
+  }
+  type BillSaleWithName {
+    _id: ID!
+    saleid:String
+    billdate: Date
+    whareid: Warehouse
+    custid: PartyEntry
+    discount: Float
+    saletax: Float
+    shippingcharges: Float
+    totalamount: Float
+    cashreceived: Float
+    billstatus: String
+    paymentstatus: String
+    paymentMode: String
+    notes: String
+    invoiceNumberfbr: String
+    salecart: [SaleCartItem]
+    createdAt: Date
+    updatedAt: Date
+  }
+  type BillReturnSale {
+    _id: ID!
+    billdate: Date
+    whareid: String
+    custid: String
+    discount: Float
+    saletax: Float
+    shippingcharges: Float
+    totalamount: Float
+    cashreceived: Float
+    billstatus: String
+    paymentstatus: String
+    paymentMode: String
+    notes: String
+    returncart: [SaleReturnCartItem]
+    createdAt: Date
+    updatedAt: Date
+  }
+  type BillReturnSaleWithName {
+    _id: ID!
+    saleretid:String
+    billdate: Date
+    whareid: Warehouse
+    custid: PartyEntry
+    discount: Float
+    saletax: Float
+    shippingcharges: Float
+    totalamount: Float
+    cashreceived: Float
+    billstatus: String
+    paymentstatus: String
+    paymentMode: String
+    notes: String
+    returncart: [SaleReturnCartItem]
+    createdAt: Date
+    updatedAt: Date
+  }
+  type SaleCartItem {
+    id: ID
+    name: String
+    price: Float
+    quantity: Float
+    discount: Float
+    tax: Float
+  }
+  type SaleReturnCartItem {
+    id: ID
+    name: String
+    price: Float
+    quantity: Float
+    discount: Float
+    tax: Float
+  }
+  type BillPurchase {
+    _id: ID!
+    purid:String
+    billdate: Date!
+    whareid: Warehouse
+    custid: PartyEntry
+    discount: Float
+    saletax: Float
+    shippingcharges: Float
+    totalamount: Float
+    cashreceived: Float
+    billstatus: String
+    paymentstatus: String
+    paymentMode: String
+    notes: String
+    purchasecart: [PurchaseCartItem]  # Assuming you have a type for purchase cart items
+    createdAt: Date
+    updatedAt: Date
+  }
+  
+  type PurchaseCartItem {
+    id: ID
+    name: String
+    price: Float
+    quantity: Float
+    discount: Float
+    tax: Float
+  }
+  
+  # Define input types for mutations
+  input PurchaseCartItemInput {
+    id: ID
+    name: String
+    price: Float
+    quantity: Float
+    discount: Float
+    tax: Float
+  }
+  
+  input CreateBillPurchaseInput {
+    billdate: Date!
+    whareid: String!
+    custid: String!
+    discount: Float
+    saletax: Float
+    shippingcharges: Float
+    totalamount: Float
+    cashreceived:Float
+    billstatus: String
+    paymentstatus: String
+    paymentMode: String
+    notes: String
+    purchasecart: [PurchaseCartItemInput]
+
+  }
+  
+
+  type QuotationBill {
+    _id: ID!
+    billdate: Date!
+    whareid: String!
+    custid: String!
+    discount: Float
+    saletax: Float
+    shippingcharges: Float
+    totalamount: Float
+    cashreceived: Float
+    billstatus: String
+    paymentstatus: String
+    paymentMode: String
+    notes: String
+    ordercart: [ordercart]  # Assuming you have a type for purchase cart items
+    createdAt: Date!
+    updatedAt: Date!
+  }
+  type QuotationBillWithName {
+    _id: ID!
+    billdate: Date!
+    orderid:String
+    whareid: Warehouse
+    custid: PartyEntry
+    discount: Float
+    saletax: Float
+    shippingcharges: Float
+    totalamount: Float
+    cashreceived: Float
+    billstatus: String
+    paymentstatus: String
+    paymentMode: String
+    notes: String
+    ordercart: [ordercart]  # Assuming you have a type for purchase cart items
+    createdAt: Date!
+    updatedAt: Date!
+  }
+  type TransferBill {
+    _id: ID!
+    billdate: Date!
+    whareid: String!
+    custid: String!
+    discount: Float
+    saletax: Float
+    shippingcharges: Float
+    totalamount: Float
+    billstatus: String
+    paymentstatus: String
+    paymentMode: String
+    notes: String
+    transfercart: [Transfercart]  # Assuming you have a type for purchase cart items
+    createdAt: Date!
+    updatedAt: Date!
+  }
+
+  type TransferBillWithName {
+    _id: ID!
+    billdate: Date!
+    transid:String
+    whareid: Warehouse
+    custid: Warehouse
+    discount: Float
+    saletax: Float
+    shippingcharges: Float
+    totalamount: Float
+    cashreceived:Float
+    billstatus: String
+    paymentstatus: String
+    paymentMode: String
+    notes: String
+    transfercart: [Transfercart]  # Assuming you have a type for purchase cart items
+    createdAt: Date!
+    updatedAt: Date!
+  }
+  type AdjustmentBill {
+    _id: ID!
+    adjustid:String
+    billdate: Date!
+    whareid: Warehouse
+    custid: String
+    discount: Float
+    saletax: Float
+    shippingcharges: Float
+    totalamount: Float
+    cashreceived:Float
+    billstatus: String
+    paymentstatus: String
+    paymentMode: String
+    notes: String
+    adjustcart: [Adjustcart]  # Assuming you have a type for purchase cart items
+    createdAt: Date!
+    updatedAt: Date!
+  }
+  type BillPurchaseReturn {
+    _id: ID!
+    purretid:String
+    billdate: Date!
+    whareid: Warehouse
+    custid: PartyEntry
+    discount: Float
+    saletax: Float
+    shippingcharges: Float
+    totalamount: Float
+    cashreceived: Float
+    billstatus: String
+    paymentstatus: String
+    paymentMode: String
+    notes: String
+    purreturncart: [PurchaseCartReturnItem]  # Assuming you have a type for purchase cart items
+    createdAt: Date!
+    updatedAt: Date!
+  }
+  
+  type PurchaseCartReturnItem {
+    id: ID
+    name: String
+    price: Float
+    quantity: Float
+    discount: Float
+    tax: Float
+  }
+  type ordercart {
+    id: ID
+    name: String
+    price: Float
+    quantity: Float
+    discount: Float
+    tax: Float
+  }
+  type Transfercart {
+    id: ID
+    name: String
+    price: Float
+    quantity: Float
+    discount: Float
+    tax: Float
+  }
+  type Adjustcart {
+    id: ID
+    name: String
+    price: Float
+    quantity: Float
+    adjusttype: String
+    discount: Float
+    tax: Float
+  }
+  
+  # Define input types for mutations
+  input PurchaseCartItemReturnInput {
+    id: ID
+    name: String
+    price: Float
+    quantity: Float
+    discount: Float
+    tax: Float
+  }
+  
+  input ordecartQuotationInput {
+    id: ID
+    name: String
+    price: Float
+    quantity: Float
+    discount: Float
+    tax: Float
+  }
+  input TransfercartInput {
+    id: ID
+    name: String
+    price: Float
+    quantity: Float
+    discount: Float
+    tax: Float
+  }
+  input AdjustcartInput {
+    id: ID
+    name: String
+    price: Float
+    quantity: Float
+    adjusttype: String
+    discount: Float
+    tax: Float
+  }
+  input CreateBillPurchaseReturnInput {
+    billdate: Date!
+    whareid: String!
+    custid: String!
+    discount: Float
+    saletax: Float
+    shippingcharges: Float
+    totalamount: Float
+    cashreceived:Float
+    billstatus: String
+    paymentstatus: String
+    paymentMode: String
+    notes: String
+    purreturncart: [PurchaseCartItemReturnInput]
+  }
+  
+  input CreateBillQuotationInput {
+    billdate: Date!
+    whareid: String!
+    custid: String!
+    discount: Float
+    saletax: Float
+    shippingcharges: Float
+    totalamount: Float
+    cashreceived: Float
+    billstatus: String
+    paymentstatus: String
+    paymentMode: String
+    notes: String
+    ordercart: [ordecartQuotationInput]
+  }
+  input CreateBillTransferInput {
+    billdate: Date!
+    whareid: String!
+    custid: String!
+    discount: Float
+    saletax: Float
+    shippingcharges: Float
+    totalamount: Float
+    cashreceived:Float
+    billstatus: String
+    paymentstatus: String
+    paymentMode: String
+    notes: String
+    transfercart: [TransfercartInput]
+  }
+  input CreateBillAdjustmentInput {
+    billdate: Date!
+    whareid: String!
+    custid: String
+    discount: Float
+    saletax: Float
+    shippingcharges: Float
+    totalamount: Float
+    cashreceived:Float
+    billstatus: String
+    paymentstatus: String
+    paymentMode: String
+    notes: String
+    adjustcart: [AdjustcartInput]
+  }
+  
+  
+  type Seller {
+    _id: ID!
+    sellername: String!
+    mobilenumber: String!
+    email: String
+    shopname: String
+    city: String
+    country: String
+    address: String
+    notes: String
+    posid: String
+    fbrtoken: String
+    createdAt: String
+    updatedAt: String
+  }
+  type ChangePasswordResponse {
+    success: Boolean!
+    message: String
+  }
+  type Mutation {
+    signupUser(userNew: UserInput!): User
+    signupSeller(userNew: UserInput!): User
+    signupSubUser(userNew: UserInput!): User
+    changePassword(oldPassword: String!, newPassword: String!): ChangePasswordResponse!
+    signinUser(userSignin: UserSigninInput): AuthPayload
+    addCategory(addNewCategory: AddNewCategoryInput!): Category
+    UpdateCategory(id: ID!, name: String!): Category
+    DelteCategory(id: ID!): String
+    addExpCategory(addNewExpCategory: AddNewExpCategoryInput!): ExpCategory
+    UpdateExpCategory(id: ID!, name: String!): ExpCategory
+    DelteExpCategory(id: ID!): String
+    addWarehouse(addNewWarehouse: AddNewWarehouseInput!): Warehouse
+    UpdateWarehouse(id: ID!, name: String!,location: String): Warehouse
+    deleteWarehouse(id: ID!): String
+    addBrands(addNewBrands: AddNewBrandsInput!): Brand
+    UpdateBrands(id: ID, name: String): Brand
+    DelteBrands(id: ID): String
+    addUnits(addNewUnits: AddNewUnitsInput!): Unit
+    UpdateUnits(id: ID, basename: String, name: String): Unit
+    DelteUnits(id: ID): String
+    addItem(item: AddItemInput!): Item
+    updateItem(id: ID!, updatedItem: AddItemInput!): Item
+    deleteItem(id: ID!): String
+    createBillSale(CreateBillSale: CreateBillSaleInput!): BillSaleWithName
+    updateBillSale(id: ID!,UpdateBillSale: CreateBillSaleInput!): BillSaleWithName
+    updateBillSaleCash(id: ID!,cashReceived: Float!):updateBillSaleCashResponse
+    deleteBillSale(id: ID!): String
+    createReturnBillSale(CreateReturnBillSale: CreateReturnBillSaleInput!): BillReturnSaleWithName
+    updateReturnBillSale(id: ID!,UpdateReturnBillSale: CreateReturnBillSaleInput!): BillReturnSaleWithName
+    updateBillSaleReturnCash(id: ID!,cashReceived: Float!):updateBillSaleReturnCashResponse
+    deleteReturnBillSale(id: ID!): String
+    createBillPurchase(input: CreateBillPurchaseInput!): BillPurchase
+    updateBillPurchase(id: ID!, input: CreateBillPurchaseInput!): BillPurchase
+    deleteBillPurchase(id: ID!): String
+    updateBillPurchaseCash(id: ID!,cashReceived: Float!):UpdateBillPurchaseCashResponse
+    createBillPurchaseReturn(input: CreateBillPurchaseReturnInput!): BillPurchaseReturn
+    updateBillPurchaseReturn(id: ID!, input: CreateBillPurchaseReturnInput!): BillPurchaseReturn
+    updateBillPurchaseReturnCash(id: ID!,cashReceived: Float!):UpdateBillPurchaseReturnCashResponse
+    deleteBillPurchaseReturn(id: ID!): String
+    createBillQuotation(input: CreateBillQuotationInput!): QuotationBillWithName
+    deleteBillQuotation(id: ID!): String
+    createBillTransfer(input: CreateBillTransferInput!): TransferBillWithName
+    deleteBillTransfer(id: ID!): String
+    createBillAdjustment(input: CreateBillAdjustmentInput!): AdjustmentBill
+    deleteBillAdjustment(id: ID!): String
+    createProject(input: CreateProjectInput!): Project
+    deleteProject(id: ID!): String
+    deleteTask(id: ID!): String
+    createTask(input: CreateTaskInput!): Task
+    updateProjectStatus(id: ID!, status: String!): Project
+    updateTaskStatus(id: ID!, status: String!): Task
+    createExpenseEntry(input: CreateExpenseEntryInput!): ExpenseEntry
+    updateExpenseEntry(id: ID!, input: CreateExpenseEntryInput!): ExpenseEntry
+    deleteExpenseEntry(id: ID!): String
+    createPartyEntry(input: CreatepartyEntryInput!): PartyEntry
+    updatePartyEntry(id: ID!, input: UpdatepartyEntryInput!): PartyEntry
+    deletePartyEntry(id: ID!): String
+    updateSeller(id: ID!, input: UpdateSellerInput!): Seller
+  }
+  
+  type updateBillSaleCashResponse {
+    message: String!
+  }
+  type updateBillSaleReturnCashResponse {
+    message: String!
+  }
+  type UpdateBillPurchaseReturnCashResponse {
+    message: String!
+  }
+  type UpdateBillPurchaseCashResponse {
+    message: String!
+  }
+  input UpdateSellerInput {
+    sellername: String
+    mobilenumber: String
+    email: String
+    shopname: String
+    city: String
+    country: String
+    address: String
+    posid: String
+    fbrtoken: String
+    notes: String
+  }
+  input CreatepartyEntryInput {
+    name: String!
+    email: String
+    phoneNumber: String
+    country: String
+    city: String
+    address: String
+    acctype: String
+    partytype: Boolean
+  
+  }
+  input UpdatepartyEntryInput {
+    name: String!
+    email: String
+    phoneNumber: String
+    country: String
+    city: String
+    address: String
+    acctype: String
+    partytype: Boolean
+  
+  }
+input CreateTaskInput {
+  title: String!
+  description: String
+  dueDate: Date!
+  status: String
+  projectId: ID!
+  userid: ID
+}
+  input UpdateTaskInput {
+    taskId: ID!
+    title: String
+    description: String
+    dueDate: Date
+    status: String
+    userid: ID
+  }
+  input UpdateProjectInput {
+    projectId: ID!
+    title: String
+    description: String
+    startDate: Date
+    endDate: Date
+    status: String
+  }
+  input CreateProjectInput {
+    title: String!
+    description: String
+    startDate: Date!
+    endDate: Date
+    status: String
+  }
+  
+  input UserInput {
+    name: String!
+    mobileno: String!
+    password: String!
+    verified: Boolean
+  }
+
+  input UserSigninInput {
+    mobileno: String!
+    password: String!
+  }
+
+  input AddNewCategoryInput {
+    name: String!
+  }
+  input AddNewExpCategoryInput {
+    name: String!
+  }
+  input AddNewWarehouseInput {
+    name: String!
+    location: String
+  }
+
+  input AddNewBrandsInput {
+    name: String!
+  }
+
+  input AddNewUnitsInput {
+    name: String!
+    basename: String!
+  }
+
+  input AddItemInput {
+    productname: String!
+    brandid: String
+    cateid: String
+    unitid: String
+    barcode: [String]
+    cost: String
+    price: String
+    wsprice: String
+    discount: String
+    alertqty: String
+    tax: String
+    ordernote: String
+  }
+
+  input SaleCartItemInput {
+    id: ID
+    name: String
+    price: Float
+    quantity: Float
+    discount: Float
+    tax: Float
+  }
+
+  input CreateBillSaleInput {
+    billdate: Date!
+    whareid: String!
+    custid: String!
+    discount: Float
+    saletax: Float
+    shippingcharges: Float
+    cashreceived:Float
+    totalamount: Float
+    billstatus: String
+    paymentstatus: String
+    paymentMode: String
+    notes: String
+    invoiceNumberfbr: String
+    salecart: [SaleCartItemInput]
+  }
+  input CreateReturnBillSaleInput {
+    billdate: Date!
+    whareid: String!
+    custid: String!
+    discount: Float
+    saletax: Float
+    shippingcharges: Float
+    totalamount: Float
+    cashreceived:Float
+    billstatus: String
+    paymentstatus: String
+    paymentMode: String
+    notes: String
+    returncart: [SaleReturnCartItemInput]
+  }
+  input SaleReturnCartItemInput {
+    id: ID
+    name: String
+    price: Float
+    quantity: Float
+    discount: Float
+    tax: Float
+  }
+`;
+
+export default typeDefs;
