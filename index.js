@@ -90,6 +90,6 @@ app.use(
 );
 
 // Modified server startup
-await new Promise((resolve) => httpServer.listen({ port: 8900 }, resolve));
+await new Promise((resolve) => httpServer.listen({ port: 8000 }, resolve));
 
 console.log(`🚀 Server ready at http://localhost:4000/`);
