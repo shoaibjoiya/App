@@ -31,8 +31,9 @@ const options = {
 };
 
 // Connect to the MongoDB database
-mongoose.connect(process.env.MONGO_URI,options)
+await mongoose.connect(process.env.MONGO_URI,options)
   .then(() => {
+
     console.log(`Connected to MongoDB database: ${databaseName}`);
   })
   .catch((error) => {
@@ -61,7 +62,12 @@ await server.start();
 // and our expressMiddleware function.
 app.use(
   '/graphql',
-  cors(),
+  cors({
+    origin: 'http://localhost:5173', // Allow requests from this origin
+    methods: 'GET,POST,OPTIONS',
+    allowedHeaders: 'Content-Type,Authorization',
+    credentials: true,
+  }),
   express.json(),
   // expressMiddleware accepts the same arguments:
   // an Apollo Server instance and optional configuration options
@@ -90,6 +96,6 @@ app.use(
 );
 
 // Modified server startup
-await new Promise((resolve) => httpServer.listen({ port: 8000 }, resolve));
+await new Promise((resolve) => httpServer.listen({ port: 4000 }, resolve));
 
 console.log(`🚀 Server ready at http://localhost:4000/`);

@@ -252,6 +252,8 @@ input CreateExpenseEntryInput {
     wsprice: String
     discount: String
     alertqty: String
+    stockqty: String
+    whareid: String
     tax: String
     ordernote: String
     createdAt: String
@@ -270,6 +272,8 @@ input CreateExpenseEntryInput {
     wsprice: String
     discount: String
     alertqty: String
+    stockqty: String
+    whareid: String
     tax: String
     ordernote: String
   }
@@ -906,6 +910,8 @@ input CreateTaskInput {
     wsprice: String
     discount: String
     alertqty: String
+    stockqty: String
+    whareid: String
     tax: String
     ordernote: String
   }

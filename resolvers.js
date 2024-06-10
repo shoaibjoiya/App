@@ -2359,6 +2359,8 @@ const resolvers = {
           wsprice,
           discount,
           alertqty,
+          stockqty,
+          whareid,
           tax,
           ordernote,
         } = item;
@@ -2404,7 +2406,7 @@ const resolvers = {
           newCode = parseInt(maxItem.code) + 1;
         } else {
           // If no maximum code exists, start with code 1
-          newCode = 921000;
+          newCode = 1000;
         }
 
         const newItemData = {
@@ -2418,6 +2420,8 @@ const resolvers = {
           wsprice,
           discount,
           alertqty,
+          stockqty,
+          whareid,
           tax,
           ordernote,
           userid: userId,
@@ -2430,6 +2434,18 @@ const resolvers = {
         // Save the new item
         const savedItem = await newItem.save();
 
+      
+        if (stockqty && whareid) {
+          const stock = new stockModel({
+            productId: savedItem._id,
+            warehouseId: whareid,
+            quantity: stockqty,
+            sellerid: sellerId
+          });
+    
+          await stock.save();
+        }
+       
         return {
           ...savedItem._doc,
           createdAt: savedItem.createdAt.toISOString(),
@@ -2445,7 +2461,7 @@ const resolvers = {
         if (!userId) {
           throw new Error("You must be logged in");
         }
-
+      
         // Convert the updated item name to lowercase for case-insensitive comparison
         if (updatedItem.productname) {
           updatedItem.productname = updatedItem.productname.toLowerCase();
@@ -2471,7 +2487,22 @@ const resolvers = {
           }
           barcodeArray = updatedItem.barcode; // Assign the provided barcode array
         }
-
+        if (updatedItem.stockqty !== undefined && updatedItem.stockqty > 0) {
+          let stock = await stockModel.findOne({ productId: id, warehouseId: updatedItem.whareid, sellerid: sellerId });
+          if (stock) {
+            stock.quantity += parseInt(updatedItem.stockqty);
+            await stock.save();
+          } else {
+            // If no stock entry exists, create a new one
+            stock = new stockModel({
+              productId: id,
+              warehouseId: updatedItem.whareid,
+              quantity: updatedItem.stockqty,
+              sellerid: sellerId
+            });
+            await stock.save();
+          }
+        }
         const updatedItemResult = await itemsModel.findByIdAndUpdate(
           id,
           { $set: updatedItem },
