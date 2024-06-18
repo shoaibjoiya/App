@@ -15,6 +15,7 @@ const itemsSchema = new mongoose.Schema({
   wsprice:     { type: String ,default: '0' },
   discount:    { type: String ,default: '0' },
   alertqty:    { type: String ,default: '0' },
+  imglink:     { type: String               },
   tax:         { type: String ,default: '0' },
   ordernote:   { type: String },
   userid:      { type: mongoose.Schema.Types.ObjectId, ref: 'userModel', required: true   },

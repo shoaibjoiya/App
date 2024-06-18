@@ -6,7 +6,7 @@ const userSchema = mongoose.Schema({
  password: { type: String, required: true },
  role: { type: String, enum: ['admin', 'seller', 'customer', 'subuser'], default: 'customer' },
  sellerid: { type: mongoose.Schema.Types.ObjectId, ref: 'sellerModel' },
- verified : {type:Boolean ,  default:true}
+ verified : {type:Boolean ,  default:false}
 
 }, { timestamps: true });
 

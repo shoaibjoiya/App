@@ -456,7 +456,9 @@ const resolvers = {
         } else {
           query = { sellerid: sellerId };
         }
-
+        if (args.cateid) {
+          query.cateid = args.cateid;
+        }
         const items = await itemsModel
           .find(query)
           .populate('brandid', '_id name ')

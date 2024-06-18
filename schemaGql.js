@@ -19,7 +19,7 @@ const typeDefs = `
     brandsbyid(id: ID!): Brand
     getUnits(page: Int, rows: Int, search: String): UnitResult!
     unitsbyid(id: ID!): Unit
-    getItems(page: Int, rows: Int, search: String): ItemResult!
+    getItems(page: Int, rows: Int, search: String, cateid: ID): ItemResult!
     getStocks(warehouseId: String, cateid: String, brandid: String, page: Int): StockData
     itemById(id: ID!): ItemWithName
     getSaleBill(page: Int, rows: Int, search: String): BillSaleResult!
