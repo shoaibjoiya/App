@@ -17,6 +17,9 @@ const itemsSchema = new mongoose.Schema({
   alertqty:    { type: String ,default: '0' },
   imglink:     { type: String               },
   tax:         { type: String ,default: '0' },
+  lockProduct: { type: Boolean, default: false },
+  ingredient:  { type: Boolean, default: false },
+  isVariant:   { type: Boolean, default: false }, 
   ordernote:   { type: String },
   userid:      { type: mongoose.Schema.Types.ObjectId, ref: 'userModel', required: true   },
   sellerid:    { type: mongoose.Schema.Types.ObjectId, ref: 'sellerModel', required: true }

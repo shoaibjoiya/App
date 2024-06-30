@@ -10,6 +10,7 @@ const sellerSchema = mongoose.Schema({
  posid: { type: String },
  fbrtoken: { type: String },
  address: { type: String },
+ sortby: { type: String },
  notes: { type: String }
 
 }, { timestamps: true });

@@ -22,7 +22,13 @@ import './models/billOrdersModel.js'
 import './models/billAdjustmentsModel.js'
 import './models/billTransfersModel.js'
 import './models/stockModel.js'
-//import expenseEntryModel from './models/expenseEntryModel.js';
+import './models/kitchenModel.js';
+import  './models/waiterModel.js';
+import  './models/chefModel.js';
+import './models/riderModel.js';
+import './models/tableModel.js';
+//import tableModel from './models/tableModel.js';
+
 
 
 const userModel = mongoose.model("userModel");
@@ -45,6 +51,11 @@ const billAdjustmentsModel = mongoose.model("billAdjustmentsModel");
 const billOrdersModel = mongoose.model("billOrdersModel");
 const billTransfersModel = mongoose.model("billTransfersModel");
 const stockModel = mongoose.model("stockModel");
+const kitchenModel = mongoose.model("kitchenModel");
+const chefModel = mongoose.model("chefModel");
+const riderModel = mongoose.model("riderModel");
+const waiterModel = mongoose.model("waiterModel");
+const tableModel = mongoose.model("tableModel");
 
 const resolvers = {
   Query: {
@@ -135,10 +146,25 @@ const resolvers = {
         } else {
           query = { sellerid: sellerId };
         }
-
+        let sortOption = { createdAt: -1 }; // Default sort by createdAt descending
+        if (args.sortby) {
+          const sortBy = args.sortby.toLowerCase();
+        
+          if (sortBy === 'createdat_asc') {
+            sortOption = { createdAt: 1 }; // Sort by createdAt ascending
+          } else if ( sortBy === 'createdat_desc') {
+            sortOption = { createdAt: -1 }; // Sort by createdAt descending
+          } else if (sortBy === 'price_asc') {
+            sortOption = { price: 1 }; // Sort by price ascending
+          } else if (sortBy === 'price_desc') {
+            sortOption = { price: -1 }; // Sort by price descending
+          }
+          // Add more conditions for other sortable fields as needed
+        }
+        
         const categories = await categoryModel
           .find(query)
-          .sort({ createdAt: -1 })
+          .sort(sortOption)
           .skip((args.page - 1) * args.rows)
           .limit(args.rows);
 
@@ -459,12 +485,28 @@ const resolvers = {
         if (args.cateid) {
           query.cateid = args.cateid;
         }
+        let sortOption = { createdAt: -1 }; // Default sort by createdAt descending
+        if (args.sortby) {
+          const sortBy = args.sortby;
+        
+          if (sortBy === 'createdat_asc') {
+            sortOption = { createdAt: 1 }; // Sort by createdAt ascending
+          } else if ( sortBy === 'createdat_desc') {
+            sortOption = { createdAt: -1 }; // Sort by createdAt descending
+          } else if (sortBy === 'price_asc') {
+            sortOption = { price: 1 }; // Sort by price ascending
+          } else if (sortBy === 'price_desc') {
+            sortOption = { price: -1 }; // Sort by price descending
+          }
+          // Add more conditions for other sortable fields as needed
+        }
+        
         const items = await itemsModel
           .find(query)
           .populate('brandid', '_id name ')
           .populate('cateid', '_id name ')
           .populate('unitid', '_id name ')
-          .sort({ createdAt: -1 })
+          .sort(sortOption)
           .skip((args.page - 1) * args.rows)
           .limit(args.rows || 10);
 
@@ -976,53 +1018,343 @@ const resolvers = {
         throw new Error('Error fetching user details: ' + error.message);
       }
     },
+    kitchenById: async (_, { id }, context) => {
+      const { userId } = context;
+      try {
+        if (!userId) {
+          throw new Error('You must be logged in with a mobile number.');
+        }
+        const kitchen = await kitchenModel.findById(id);
 
-    //reports 
-    //sale reports
-    ReportgetsaleBills: async (_, { warehouseId, customerId, userIds, paymentStatus, startDate, endDate, page }, context) => {
+        if (!kitchen) {
+          throw new Error('Kitchen not found');
+        }
+
+        return kitchen;
+      } catch (error) {
+        throw new Error(`Error fetching kitchen: ${error.message}`);
+      }
+    },
+    getKitchens: async (_, { search, page, rows }, context) => {
       const { userId, sellerId } = context;
-
       try {
         if (!userId) {
           throw new Error('You must be logged in with a mobile number.');
         }
 
-        let query = { sellerid: sellerId, billdate: { $gte: startDate, $lte: endDate } };
+        let query = { sellerid: sellerId };
 
-        if (customerId) {
-          query.custid = customerId;
-        }
-        if (warehouseId) {
-          query.whareid = warehouseId;
-        }
-        if (userIds && userIds.length > 0) {
-          query.userid = { $in: userIds };
-        }
-        if (paymentStatus) {
-          query.paymentstatus = paymentStatus;
+        if (search) {
+          const searchRegex = new RegExp(search.replace(/[\\\[\]()+?.*]/g, (c) => '\\' + c), 'i');
+          query.name = searchRegex;
         }
 
-        //console.log(query);
-        const totalCount = await billSaleModel.countDocuments(query);
-
-        const bills = await billSaleModel
+        const kitchens = await kitchenModel
           .find(query)
-          .populate('whareid', '_id name ')
-          .populate('custid', '_id name ')
           .sort({ createdAt: -1 })
-          .skip((page - 1) * 10)
-          .limit(10);
+          .skip((page - 1) * rows)
+          .limit(rows);
+
+        const kitchensCount = await kitchenModel.countDocuments(query);
 
         return {
-          bills: bills.map((bill) => ({
-            ...bill._doc,
+          kitchens: kitchens.map((kitchen) => ({
+            ...kitchen._doc,
+            createdAt: kitchen.createdAt.toISOString(),
           })),
-          totalCount: totalCount,
+          kitchensCount,
         };
       } catch (error) {
-        throw new Error('Error fetching bills: ' + error.message);
+        throw new Error(`Error fetching kitchens: ${error.message}`);
       }
     },
+    waiterById: async (_, { id }, context) => {
+      const { userId } = context;
+      try {
+        if (!userId) {
+          throw new Error('You must be logged in with a mobile number.');
+        }
+        const waiter = await waiterModel.findById(id);
+
+        if (!waiter) {
+          throw new Error('Waiter not found');
+        }
+
+        return waiter;
+      } catch (error) {
+        throw new Error(`Error fetching waiter: ${error.message}`);
+      }
+    },
+    getWaiters: async (_, { search, page, rows }, context) => {
+      const { userId, sellerId } = context;
+      try {
+        if (!userId) {
+          throw new Error('You must be logged in with a mobile number.');
+        }
+
+        let query = { sellerid: sellerId };
+
+        if (search) {
+          const searchRegex = new RegExp(search.replace(/[\\\[\]()+?.*]/g, (c) => '\\' + c), 'i');
+          query.name = searchRegex;
+        }
+
+        const waiters = await waiterModel
+          .find(query)
+          .sort({ createdAt: -1 })
+          .skip((page - 1) * rows)
+          .limit(rows);
+
+        const waitersCount = await waiterModel.countDocuments(query);
+
+        return {
+          waiters: waiters.map((waiter) => ({
+            ...waiter._doc,
+            createdAt: waiter.createdAt.toISOString(),
+          })),
+          waitersCount,
+        };
+      } catch (error) {
+        throw new Error(`Error fetching waiters: ${error.message}`);
+      }
+    },
+    tableById: async (_, { id }, context) => {
+      const { userId } = context;
+      try {
+        if (!userId) {
+          throw new Error('You must be logged in with a mobile number.');
+        }
+        const table = await tableModel.findById(id);
+
+        if (!table) {
+          throw new Error('Table not found');
+        }
+
+        return table;
+      } catch (error) {
+        throw new Error(`Error fetching table: ${error.message}`);
+      }
+    },
+    getTables: async (_, { search, page, rows }, context) => {
+      const { userId, sellerId } = context;
+      try {
+        if (!userId) {
+          throw new Error('You must be logged in with a mobile number.');
+        }
+
+        let query = { sellerid: sellerId , reserved: false};
+
+        if (search) {
+          const searchRegex = new RegExp(search.replace(/[\\\[\]()+?.*]/g, (c) => '\\' + c), 'i');
+          query.name = searchRegex;
+        }
+
+        const tables = await tableModel
+          .find(query)
+          .sort({ createdAt: -1 })
+          .skip((page - 1) * rows)
+          .limit(rows);
+
+        const tablesCount = await tableModel.countDocuments(query);
+
+        return {
+          tables: tables.map((table) => ({
+            ...table._doc,
+            createdAt: table.createdAt.toISOString(),
+          })),
+          tablesCount,
+        };
+      } catch (error) {
+        throw new Error(`Error fetching tables: ${error.message}`);
+      }
+    },
+    riderById: async (_, { id }, context) => {
+      const { userId } = context;
+      try {
+        if (!userId) {
+          throw new Error('You must be logged in with a mobile number.');
+        }
+        const rider = await riderModel.findById(id);
+
+        if (!rider) {
+          throw new Error('Rider not found');
+        }
+
+        return rider;
+      } catch (error) {
+        throw new Error(`Error fetching rider: ${error.message}`);
+      }
+    },
+    getRiders: async (_, { search, page, rows }, context) => {
+      const { userId, sellerId } = context;
+      try {
+        if (!userId) {
+          throw new Error('You must be logged in with a mobile number.');
+        }
+
+        let query = { sellerid: sellerId };
+
+        if (search) {
+          const searchRegex = new RegExp(search.replace(/[\\\[\]()+?.*]/g, (c) => '\\' + c), 'i');
+          query.name = searchRegex;
+        }
+
+        const riders = await riderModel
+          .find(query)
+          .sort({ createdAt: -1 })
+          .skip((page - 1) * rows)
+          .limit(rows);
+
+        const ridersCount = await riderModel.countDocuments(query);
+
+        return {
+          riders: riders.map((rider) => ({
+            ...rider._doc,
+            createdAt: rider.createdAt.toISOString(),
+          })),
+          ridersCount,
+        };
+      } catch (error) {
+        throw new Error(`Error fetching riders: ${error.message}`);
+      }
+    },
+    chefById: async (_, { id }, context) => {
+      const { userId } = context;
+      try {
+        if (!userId) {
+          throw new Error('You must be logged in with a mobile number.');
+        }
+        const chef = await chefModel.findById(id);
+
+        if (!chef) {
+          throw new Error('Chef not found');
+        }
+
+        return chef;
+      } catch (error) {
+        throw new Error(`Error fetching chef: ${error.message}`);
+      }
+    },
+    getChefs: async (_, { search, page, rows }, context) => {
+      const { userId, sellerId } = context;
+      try {
+        if (!userId) {
+          throw new Error('You must be logged in with a mobile number.');
+        }
+
+        let query = { sellerid: sellerId };
+
+        if (search) {
+          const searchRegex = new RegExp(search.replace(/[\\\[\]()+?.*]/g, (c) => '\\' + c), 'i');
+          query.name = searchRegex;
+        }
+
+        const chefs = await chefModel
+          .find(query)
+          .sort({ createdAt: -1 })
+          .skip((page - 1) * rows)
+          .limit(rows);
+
+        const chefsCount = await chefModel.countDocuments(query);
+
+        return {
+          chefs: chefs.map((chef) => ({
+            ...chef._doc,
+            createdAt: chef.createdAt.toISOString(),
+          })),
+          chefsCount,
+        };
+      } catch (error) {
+        throw new Error(`Error fetching chefs: ${error.message}`);
+      }
+    },
+
+    //reports 
+    //sale reports
+    ReportgetsaleBills: async (_, { warehouseId, customerId, userIds, paymentStatus, startDate, endDate, page }, context) => {
+          const { userId, sellerId } = context;
+    
+          try {
+            if (!userId) {
+              throw new Error('You must be logged in with a mobile number.');
+            }
+    
+            // Convert startDate and endDate to Date objects
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            
+            let query = { 
+              sellerid: sellerId, 
+              billdate: { $gte: start, $lte: end } 
+            };
+    
+            if (customerId) {
+              query.custid = customerId;
+            }
+            if (warehouseId) {
+              query.whareid = warehouseId;
+            }
+            if (userIds && userIds.length > 0) {
+              query.userid = { $in: userIds };
+            }
+            if (paymentStatus) {
+              query.paymentstatus = paymentStatus;
+            }
+    
+            const totalCount = await billSaleModel.countDocuments(query);
+    
+            const bills = await billSaleModel
+              .find(query)
+              .populate('whareid', '_id name')
+              .populate('custid', '_id name')
+              .sort({ createdAt: -1 })
+              .skip((page - 1) * 10)
+              .limit(10);
+    
+            return {
+              bills: bills.map(bill => ({
+                ...bill._doc,
+              })),
+              totalCount: totalCount,
+            };
+          } catch (error) {
+            throw new Error('Error fetching bills: ' + error.message);
+          }
+    },
+    ReportTodaySalesBetween: async (_, { startDate, endDate }, context) => {
+          try {
+            const { sellerId } = context;
+            
+            const startOfDay = new Date(startDate);
+            startOfDay.setUTCHours(0, 0, 0, 0); 
+    
+            const endOfDay = new Date(endDate);
+            endOfDay.setUTCHours(23, 59, 59, 999); 
+            
+            const salesBetweenDates = await billSaleModel.aggregate([
+              {
+                $match: {
+                  sellerid: new mongoose.Types.ObjectId(sellerId),
+                  billdate: {
+                    $gte: startOfDay, 
+                    $lte: endOfDay 
+                  }
+                }
+              },
+              {
+                $group: {
+                  _id: null,
+                  totalSales: { $sum: "$totalamount" }
+                }
+              }
+            ]);
+            
+            return salesBetweenDates.length > 0 ? salesBetweenDates[0].totalSales : 0; 
+          } catch (error) {
+            console.error('Error:', error);
+            return null;
+          }
+    },   
     ReportTotalPendingCash: async (_, __, context) => {
       try {
         const { sellerId } = context;
@@ -1117,7 +1449,7 @@ const resolvers = {
         console.error('Error:', error);
         return null;
       }
-    },  
+    },     
     ReportPreviousDaySales: async (_, __, context) => {
       try {
         const { sellerId } = context;
@@ -1743,10 +2075,12 @@ const resolvers = {
       }
 
     },
+   
 
 
   },
-  Mutation: {
+  Mutation: 
+  {
     signupUser: async (_, { userNew }) => {
       try {
         const user = await userModel.findOne({ mobileno: userNew.mobileno });
@@ -1876,11 +2210,12 @@ const resolvers = {
     },
     signinUser: async (_, { userSignin }) => {
       try {
-        // Your existing logic to validate user credentials
+        // Validate user credentials
         const user = await userModel.findOne({ mobileno: userSignin.mobileno, verified: true });
         if (!user) {
           throw new Error('User doesn\'t exist with this Mobile');
         }
+
         const doMatch = await bcrypt.compare(userSignin.password, user.password);
         if (!doMatch) {
           throw new Error('Mobile or password is invalid');
@@ -1898,6 +2233,8 @@ const resolvers = {
               city: seller.city,
               country: seller.country,
               address: seller.address,
+              sortby: seller.sortby,
+              notes: seller.notes,
               posid: seller.posid,
               fbrtoken: seller.fbrtoken,
             };
@@ -1905,10 +2242,14 @@ const resolvers = {
         }
 
         // Sign the token with userId and set expiration to 10 hours
-        const token = jwt.sign({ userId: user._id, sellerId: user.sellerid }, process.env.JWT_SECRET, { expiresIn: '10h' });
+        const token = jwt.sign(
+          { userId: user._id,name:user.name ,role: user.role, sellerId: user.sellerid },
+          process.env.JWT_SECRET,
+          { expiresIn: '10h' }
+        );
 
         // Return the authentication payload including sellerInfo
-        return { token, user, sellerInfo };
+        return { token,sellerInfo };
       } catch (error) {
         throw new Error('Error signing in user: ' + error.message);
       }
@@ -2401,16 +2742,7 @@ const resolvers = {
         // Find the maximum code in the database
         // const maxItem = await itemsModel.findOne({}, { code: 1 }, { sort: { 'code': -1 } });
         const maxItem = await itemsModel.findOne({}, { code: 1 }).sort({ 'code': -1 });
-
-        let newCode;
-        if (maxItem && maxItem.code) {
-          // If a maximum code exists, add one to it
-          newCode = parseInt(maxItem.code) + 1;
-        } else {
-          // If no maximum code exists, start with code 1
-          newCode = 1000;
-        }
-
+        let newCode = maxItem && maxItem.code ? parseInt(maxItem.code) + 1 : 1000;
         const newItemData = {
           productname: lowerCaseProductName,
           code: newCode,
@@ -2535,33 +2867,30 @@ const resolvers = {
       if (!userId) {
         throw new Error("You must be logged in");
       }
-
-      // Destructure all properties from billSaleInput
-      const { billdate, whareid, custid, discount, saletax, shippingcharges, totalamount, billstatus, paymentstatus, paymentMode, cashreceived, notes,invoiceNumberfbr,salecart } = CreateBillSale;
-      // console.log('Bill Date:', billdate);
+    
+      const {
+        billdate, whareid, custid, discount, saletax, shippingcharges,
+        totalamount, billstatus, paymentstatus, paymentMode, cashreceived, receivedamount,
+        notes, invoiceNumberfbr, salecart, customerName, mobileNumber, deliveryAddress,
+        riderName, riderid, waiterName, waiterid, tableName, tabileid,chefid, orderType,kitchenid
+      } = CreateBillSale;
+    
       // Check if the required fields are provided
-      if (!billdate || !whareid || !custid) {
-        throw new Error("billdate, whareid, and custid are required fields");
+      if (!billdate || !whareid || !custid ) {
+        throw new Error("billdate, whareid, custid are required fields");
       }
-      // Find the maximum code in the database
-      //const maxItem = await billSaleModel.findOne({}, { code: 1 }, { sort: { 'code': -1 } });
+    
+      // Find the maximum saleid in the database
       const maxItem = await billSaleModel.findOne({}, { saleid: 1 }).sort({ 'saleid': -1 });
-
-      let newCode;
-      if (maxItem && maxItem.saleid) {
-        // If a maximum code exists, add one to it
-        newCode = parseInt(maxItem.saleid) + 1;
-      } else {
-        // If no maximum code exists, start with code 1
-        newCode = 1;
-      }
+      let newCode = maxItem && maxItem.saleid ? parseInt(maxItem.saleid) + 1 : 1;
+      
       try {
-        // Assuming whareid and custid are IDs
+        // Create a new bill sale instance
         const newBillSale = new billSaleModel({
           billdate,
           saleid: newCode,
-          whareid: whareid, // Assuming whareid is a valid ID
-          custid: custid,   // Assuming custid is a valid ID
+          whareid,  // Assuming whareid is a valid ID
+          custid,   // Assuming custid is a valid ID
           discount,
           saletax,
           shippingcharges,
@@ -2569,48 +2898,62 @@ const resolvers = {
           billstatus,
           paymentstatus,
           paymentMode,
-          notes,
-          salecart,
           cashreceived,
+          receivedamount,
+          notes,
+          chefid,
+          salecart,
           invoiceNumberfbr,
+          customerName,
+          mobileNumber,
+          deliveryAddress,
+          riderName,
+          riderid,
+          waiterName,
+          waiterid,
+          tableName,
+          tabileid,
+          orderType,
+          kitchenid,
           userid: userId,
           sellerid: sellerId, // Assign the sellerid obtained from the user
         });
-
+    
         // Save the new bill sale
         const savedBillSale = await newBillSale.save();
-
+    
         if (!savedBillSale) {
           throw new Error("Failed to create bill sale");
         }
-        try {
-          for (const item of salecart) {
-            const { id, quantity } = item; // Extract id, quantity, and whareid from each item
-
-            // Find the stock entry for the warehouse and product
-            let stock = await stockModel.findOne({ productId: id, warehouseId: whareid });
-
-            if (!stock) {
-              // If no stock entry exists, create a new one
-              stock = new stockModel({ productId: id, warehouseId: whareid, quantity: -quantity, sellerid: sellerId });
-
-            } else {
-              // If stock entry exists, update the quantity
-              stock.quantity -= quantity;
-            }
-
-            // Save the updated or new stock entry
-            await stock.save();
+    
+        // Update stock levels for each item in salecart
+        for (const item of salecart) {
+          const { id, quantity } = item;
+    
+          // Find or create stock entry for the warehouse and product
+          let stock = await stockModel.findOne({ productId: id, warehouseId: whareid });
+    
+          if (!stock) {
+            // If no stock entry exists, create a new one
+            stock = new stockModel({ productId: id, warehouseId: whareid, quantity: -quantity, sellerid: sellerId });
+          } else {
+            // If stock entry exists, update the quantity
+            stock.quantity -= quantity;
           }
-
-        //  console.log("Stocks updated successfully");
-        } catch (error) {
-          console.error("Error updating stocks:", error);
-          throw new Error(`Error updating stocks: ${error.message}`);
+    
+          // Save the updated or new stock entry
+          await stock.save();
         }
-        // Fetch and populate the referenced documents for whareid and custid
+        if (tabileid) {
+          if (billstatus === "ordered") {
+              await tableModel.findByIdAndUpdate(tabileid, { reserved: true });
+          } else {
+              await tableModel.findByIdAndUpdate(tabileid, { reserved: false });
+          }
+         }
+        // Fetch and populate referenced documents for whareid and custid
         const populatedBillSale = await billSaleModel.findById(savedBillSale._id).populate('whareid').populate('custid');
-
+    
         return {
           ...populatedBillSale._doc,
           createdAt: populatedBillSale.createdAt.toISOString(),
@@ -2618,14 +2961,19 @@ const resolvers = {
       } catch (error) {
         throw new Error(`Error creating bill sale: ${error.message}`);
       }
-    },
+    },        
     updateBillSale: async (_, { id, UpdateBillSale }, context) => {
       try {
         const { userId, sellerId } = context;
         if (!userId) {
           throw new Error("You must be logged in");
         }
-        const { whareid, salecart } = UpdateBillSale;
+        const {
+          billdate, whareid, custid, discount, saletax, shippingcharges,
+          totalamount, billstatus, paymentstatus, paymentMode, cashreceived, receivedamount,
+          notes, invoiceNumberfbr, salecart, customerName, mobileNumber, deliveryAddress,
+          riderName, riderid, waiterName, waiterid, tableName, tabileid,chefid, orderType,kitchenid
+        } = UpdateBillSale;
         const previousBillSale = await billSaleModel.findById(id);
     
         if (!previousBillSale) {
@@ -2659,7 +3007,13 @@ const resolvers = {
           }
           await stock.save();
         }
-    
+        if (tabileid) {
+          if (billstatus === "ordered") {
+              await tableModel.findByIdAndUpdate(tabileid, { reserved: true });
+          } else {
+              await tableModel.findByIdAndUpdate(tabileid, { reserved: false });
+          }
+         }
         return updatedBillSale;
       } catch (error) {
         throw new Error(`Error updating bill sale: ${error.message}`);
@@ -2756,15 +3110,8 @@ const resolvers = {
       }
       //const maxItem = await billSaleModel.findOne({}, { code: 1 }, { sort: { 'code': -1 } });
       const maxItem = await billSaleReturnModel.findOne({}, { saleretid: 1 }).sort({ 'saleretid': -1 });
-
-      let newCode;
-      if (maxItem && maxItem.saleretid) {
-        // If a maximum code exists, add one to it
-        newCode = parseInt(maxItem.saleretid) + 1;
-      } else {
-        // If no maximum code exists, start with code 1
-        newCode = 1;
-      }
+      let newCode = maxItem && maxItem.saleretid ? parseInt(maxItem.saleretid) + 1 : 1;
+      
       try {
         // Create a new bill sale model instance
         const newBillSale = new billSaleReturnModel({
@@ -3196,15 +3543,9 @@ const resolvers = {
         throw new Error("billdate, whareid, and custid are required fields");
       }
       const maxItem = await billPurchaseReturnModel.findOne({}, { purretid: 1 }).sort({ 'purretid': -1 });
-
-      let newCode;
-      if (maxItem && maxItem.purretid) {
-        // If a maximum code exists, add one to it
-        newCode = parseInt(maxItem.purretid) + 1;
-      } else {
-        // If no maximum code exists, start with code 1
-        newCode = 1;
-      }
+      let newCode = maxItem && maxItem.purretid ? parseInt(maxItem.purretid) + 1 : 1;
+     
+   
       try {
         const newBillPurchasereturn = new billPurchaseReturnModel({
           billdate,
@@ -3405,15 +3746,9 @@ const resolvers = {
         throw new Error("billdate, whareid, and custid are required fields");
       }
       const maxItem = await billOrdersModel.findOne({}, { orderid: 1 }).sort({ 'orderid': -1 });
-
-      let newCode;
-      if (maxItem && maxItem.orderid) {
-        // If a maximum code exists, add one to it
-        newCode = parseInt(maxItem.orderid) + 1;
-      } else {
-        // If no maximum code exists, start with code 1
-        newCode = 1;
-      }
+      let newCode = maxItem && maxItem.orderid ? parseInt(maxItem.orderid) + 1 : 1;
+     
+    
       try {
         const newBillQuotation = new billOrdersModel({
           billdate,
@@ -3471,15 +3806,7 @@ const resolvers = {
         throw new Error("billdate, whareid, and custid are required fields");
       }
       const maxItem = await billTransfersModel.findOne({}, { transid: 1 }).sort({ 'transid': -1 });
-    
-      let newCode;
-      if (maxItem && maxItem.transid) {
-        // If a maximum code exists, add one to it
-        newCode = parseInt(maxItem.transid) + 1;
-      } else {
-        // If no maximum code exists, start with code 1
-        newCode = 1;
-      }
+      let newCode = maxItem && maxItem.transid ? parseInt(maxItem.transid) + 1 : 1;
     
       try {
         const newBilltransfer = new billTransfersModel({
@@ -3602,12 +3929,8 @@ const resolvers = {
         try {
           // Find the maximum code in the database
           const maxItem = await billAdjustmentsModel.findOne({}, { adujstid: 1 }).sort({ 'adujstid': -1 });
-          let newCode = 1;
-          if (maxItem && maxItem.adujstid) {
-            // If a maximum code exists, add one to it
-            newCode = parseInt(maxItem.adujstid) + 1;
-          }
-
+          let newCode = maxItem && maxItem.adujstid ? parseInt(maxItem.adujstid) + 1 : 1;
+    
           // Create a new bill adjustment
           const newBillAdjustment = new billAdjustmentsModel({
             billdate,
@@ -4032,6 +4355,496 @@ const resolvers = {
         return updatedSellerResult;
       } catch (error) {
         throw new Error(`Error updating seller: ${error.message}`);
+      }
+    },
+    addKitchen: async (_, { addNewKitchen }, context) => {
+      try {
+        const { userId, sellerId } = context;
+        const { name, description } = addNewKitchen;
+
+        if (!userId) {
+          throw new Error("You must be logged in");
+        }
+
+        if (!name) {
+          throw new Error("Name is required");
+        }
+
+        const lowerCaseName = name.toLowerCase();
+        const existingKitchen = await kitchenModel.findOne({ name: { $regex: new RegExp('^' + lowerCaseName + '$', 'i') }, sellerid: sellerId });
+
+        if (existingKitchen) {
+          throw new Error('Kitchen with the same name already exists for this seller.');
+        }
+
+        const newKitchen = new kitchenModel({
+          name: lowerCaseName,
+          description,
+          userid: userId,
+          sellerid: sellerId,
+        });
+
+        const savedKitchen = await newKitchen.save();
+
+        return {
+          ...savedKitchen._doc,
+          createdAt: savedKitchen.createdAt.toISOString(),
+        };
+      } catch (error) {
+        console.error("Error adding kitchen:", error);
+        throw new Error(`Error adding kitchen: ${error.message}`);
+      }
+    },
+    updateKitchen: async (_, { id,input }, context) => {
+      try {
+        const { userId, sellerId } = context;
+        if (!userId) {
+          throw new Error("You must be logged in");
+        }
+        const { name, description } = input;
+        const lowerCaseName = name ? name.toLowerCase() : null;
+        const existingKitchen = lowerCaseName ? await kitchenModel.findOne({ name: { $regex: new RegExp('^' + lowerCaseName + '$', 'i') }, sellerid: sellerId }) : null;
+
+        if (existingKitchen && existingKitchen._id.toString() !== id) {
+          throw new Error('Kitchen with the updated name already exists for this seller.');
+        }
+
+        const updateFields = {};
+        if (lowerCaseName) updateFields.name = lowerCaseName;
+        if (description) updateFields.description = description;
+
+        const updatedKitchen = await kitchenModel.findByIdAndUpdate(
+          id,
+          updateFields,
+          { new: true }
+        );
+
+        if (!updatedKitchen) {
+          throw new Error("Kitchen not found");
+        }
+
+        return updatedKitchen;
+      } catch (error) {
+        console.error("Error updating kitchen:", error);
+        throw new Error(`Error updating kitchen: ${error.message}`);
+      }
+    },
+    deleteKitchen: async (_, { id }, context) => {
+      try {
+        const { userId } = context;
+        if (!userId) {
+          throw new Error("You must be logged in");
+        }
+
+        const itemCount = await billSaleModel.countDocuments();
+
+        if (itemCount > 0) {
+          throw new Error("Cannot delete kitchen as it is referenced in itemsModel");
+        }
+
+        await kitchenModel.findByIdAndDelete(id);
+        return "Kitchen deleted successfully";
+      } catch (error) {
+        console.error("Error deleting kitchen:", error);
+        throw new Error(`Error deleting kitchen: ${error.message}`);
+      }
+    },
+    addWaiter: async (_, { addNewWaiter }, context) => {
+      try {
+        const { userId, sellerId } = context;
+        const { name, commission, charges, address, phone, vehicleNumber, homeNumber } = addNewWaiter;
+
+        if (!userId) {
+          throw new Error("You must be logged in");
+        }
+
+        if (!name) {
+          throw new Error("Name is required");
+        }
+
+        const lowerCaseName = name.toLowerCase();
+        const existingWaiter = await waiterModel.findOne({ name: { $regex: new RegExp('^' + lowerCaseName + '$', 'i') }, sellerid: sellerId });
+
+        if (existingWaiter) {
+          throw new Error('Waiter with the same name already exists for this seller.');
+        }
+
+        const newWaiter = new waiterModel({
+          name: lowerCaseName,
+          commission,
+          charges,
+          address,
+          phone,
+          vehicleNumber,
+          homeNumber,
+          userid: userId,
+          sellerid: sellerId,
+        });
+
+        const savedWaiter = await newWaiter.save();
+
+        return {
+          ...savedWaiter._doc,
+          createdAt: savedWaiter.createdAt.toISOString(),
+        };
+      } catch (error) {
+        console.error("Error adding waiter:", error);
+        throw new Error(`Error adding waiter: ${error.message}`);
+      }
+    },
+    updateWaiter: async (_, { id, input}, context) => {
+      try {
+        const { userId, sellerId } = context;
+        
+        if (!userId) {
+          throw new Error("You must be logged in");
+        }
+        const { name, commission, charges, address, phone, vehicleNumber, homeNumber } = input;
+
+        const lowerCaseName = name ? name.toLowerCase() : null;
+        const existingWaiter = lowerCaseName ? await waiterModel.findOne({ name: { $regex: new RegExp('^' + lowerCaseName + '$', 'i') }, sellerid: sellerId }) : null;
+
+        if (existingWaiter && existingWaiter._id.toString() !== id) {
+          throw new Error('Waiter with the updated name already exists for this seller.');
+        }
+
+        const updateFields = {};
+        if (lowerCaseName) updateFields.name = lowerCaseName;
+        if (commission !== undefined) updateFields.commission = commission;
+        if (charges !== undefined) updateFields.charges = charges;
+        if (address !== undefined) updateFields.address = address;
+        if (phone !== undefined) updateFields.phone = phone;
+        if (vehicleNumber !== undefined) updateFields.vehicleNumber = vehicleNumber;
+        if (homeNumber !== undefined) updateFields.homeNumber = homeNumber;
+
+        const updatedWaiter = await waiterModel.findByIdAndUpdate(
+          id,
+          updateFields,
+          { new: true }
+        );
+
+        if (!updatedWaiter) {
+          throw new Error("Waiter not found");
+        }
+
+        return updatedWaiter;
+      } catch (error) {
+        console.error("Error updating waiter:", error);
+        throw new Error(`Error updating waiter: ${error.message}`);
+      }
+    },
+    deleteWaiter: async (_, { id }, context) => {
+      try {
+        const { userId } = context;
+        if (!userId) {
+          throw new Error("You must be logged in");
+        }
+        const itemCount = await billSaleModel.countDocuments();
+
+        if (itemCount > 0) {
+          throw new Error("Cannot delete kitchen as it is referenced in itemsModel");
+        }
+        await waiterModel.findByIdAndDelete(id);
+        return "Waiter deleted successfully";
+      } catch (error) {
+        console.error("Error deleting waiter:", error);
+        throw new Error(`Error deleting waiter: ${error.message}`);
+      }
+    },
+    addTable: async (_, { addNewTable }, context) => {
+      try {
+        const { userId, sellerId } = context;
+        const { name, tablesize, reserved, area } = addNewTable;
+
+        if (!userId) {
+          throw new Error("You must be logged in");
+        }
+
+        if (!name) {
+          throw new Error("Name is required");
+        }
+
+        const lowerCaseName = name.toLowerCase();
+        const existingTable = await tableModel.findOne({ name: { $regex: new RegExp('^' + lowerCaseName + '$', 'i') }, sellerid: sellerId });
+
+        if (existingTable) {
+          throw new Error('Table with the same name already exists for this seller.');
+        }
+
+        const newTable = new tableModel({
+          name: lowerCaseName,
+          tablesize,
+          reserved,
+          area,
+          userid: userId,
+          sellerid: sellerId,
+        });
+
+        const savedTable = await newTable.save();
+
+        return {
+          ...savedTable._doc,
+          createdAt: savedTable.createdAt.toISOString(),
+        };
+      } catch (error) {
+        console.error("Error adding table:", error);
+        throw new Error(`Error adding table: ${error.message}`);
+      }
+    },
+    updateTable: async (_, { id, input }, context) => {
+      try {
+        const { userId, sellerId } = context;
+        if (!userId) {
+          throw new Error("You must be logged in");
+        }
+        const { name, tablesize, reserved, area } = input;
+        const lowerCaseName = name ? name.toLowerCase() : null;
+        const existingTable = lowerCaseName ? await tableModel.findOne({ name: { $regex: new RegExp('^' + lowerCaseName + '$', 'i') }, sellerid: sellerId }) : null;
+
+        if (existingTable && existingTable._id.toString() !== id) {
+          throw new Error('Table with the updated name already exists for this seller.');
+        }
+
+        const updateFields = {};
+        if (lowerCaseName) updateFields.name = lowerCaseName;
+        if (tablesize !== undefined) updateFields.tablesize = tablesize;
+        if (reserved !== undefined) updateFields.reserved = reserved;
+        if (area !== undefined) updateFields.area = area;
+
+        const updatedTable = await tableModel.findByIdAndUpdate(
+          id,
+          updateFields,
+          { new: true }
+        );
+
+        if (!updatedTable) {
+          throw new Error("Table not found");
+        }
+
+        return updatedTable;
+      } catch (error) {
+        console.error("Error updating table:", error);
+        throw new Error(`Error updating table: ${error.message}`);
+      }
+    },
+    deleteTable: async (_, { id }, context) => {
+      try {
+        const { userId } = context;
+        if (!userId) {
+          throw new Error("You must be logged in");
+        }
+        const itemCount = await billSaleModel.countDocuments();
+
+        if (itemCount > 0) {
+          throw new Error("Cannot delete kitchen as it is referenced in itemsModel");
+        }
+        await tableModel.findByIdAndDelete(id);
+        return "Table deleted successfully";
+      } catch (error) {
+        console.error("Error deleting table:", error);
+        throw new Error(`Error deleting table: ${error.message}`);
+      }
+    },
+    addRider: async (_, { addNewRider }, context) => {
+      try {
+        const { userId, sellerId } = context;
+        const { name, commission, charges, address, phone, vehicleNumber, homeNumber } = addNewRider;
+
+        if (!userId) {
+          throw new Error("You must be logged in");
+        }
+
+        if (!name) {
+          throw new Error("Name is required");
+        }
+
+        const lowerCaseName = name.toLowerCase();
+        const existingRider = await riderModel.findOne({ name: { $regex: new RegExp('^' + lowerCaseName + '$', 'i') }, sellerid: sellerId });
+
+        if (existingRider) {
+          throw new Error('Rider with the same name already exists for this seller.');
+        }
+
+        const newRider = new riderModel({
+          name: lowerCaseName,
+          commission,
+          charges,
+          address,
+          phone,
+          vehicleNumber,
+          homeNumber,
+          userid: userId,
+          sellerid: sellerId,
+        });
+
+        const savedRider = await newRider.save();
+
+        return {
+          ...savedRider._doc,
+          createdAt: savedRider.createdAt.toISOString(),
+        };
+      } catch (error) {
+        console.error("Error adding rider:", error);
+        throw new Error(`Error adding rider: ${error.message}`);
+      }
+    },
+    updateRider: async (_, { id, input }, context) => {
+      try {
+        const { userId, sellerId } = context;
+        if (!userId) {
+          throw new Error("You must be logged in");
+        }
+        const { name, commission, charges, address, phone, vehicleNumber, homeNumber } = input;
+
+        const lowerCaseName = name ? name.toLowerCase() : null;
+        const existingRider = lowerCaseName ? await riderModel.findOne({ name: { $regex: new RegExp('^' + lowerCaseName + '$', 'i') }, sellerid: sellerId }) : null;
+
+        if (existingRider && existingRider._id.toString() !== id) {
+          throw new Error('Rider with the updated name already exists for this seller.');
+        }
+
+        const updateFields = {};
+        if (lowerCaseName) updateFields.name = lowerCaseName;
+        if (commission !== undefined) updateFields.commission = commission;
+        if (charges !== undefined) updateFields.charges = charges;
+        if (address !== undefined) updateFields.address = address;
+        if (phone !== undefined) updateFields.phone = phone;
+        if (vehicleNumber !== undefined) updateFields.vehicleNumber = vehicleNumber;
+        if (homeNumber !== undefined) updateFields.homeNumber = homeNumber;
+
+        const updatedRider = await riderModel.findByIdAndUpdate(
+          id,
+          updateFields,
+          { new: true }
+        );
+
+        if (!updatedRider) {
+          throw new Error("Rider not found");
+        }
+
+        return updatedRider;
+      } catch (error) {
+        console.error("Error updating rider:", error);
+        throw new Error(`Error updating rider: ${error.message}`);
+      }
+    },
+    deleteRider: async (_, { id }, context) => {
+      try {
+        const { userId } = context;
+        if (!userId) {
+          throw new Error("You must be logged in");
+        }
+        const itemCount = await billSaleModel.countDocuments();
+
+        if (itemCount > 0) {
+          throw new Error("Cannot delete kitchen as it is referenced in itemsModel");
+        }
+        await riderModel.findByIdAndDelete(id);
+        return "Rider deleted successfully";
+      } catch (error) {
+        console.error("Error deleting rider:", error);
+        throw new Error(`Error deleting rider: ${error.message}`);
+      }
+    },
+    addChef: async (_, { addNewChef }, context) => {
+      try {
+        const { userId, sellerId } = context;
+        const { name, commission, charges, address, phone, vehicleNumber, homeNumber } = addNewChef;
+
+        if (!userId) {
+          throw new Error("You must be logged in");
+        }
+
+        if (!name) {
+          throw new Error("Name is required");
+        }
+
+        const lowerCaseName = name.toLowerCase();
+        const existingChef = await chefModel.findOne({ name: { $regex: new RegExp('^' + lowerCaseName + '$', 'i') }, sellerid: sellerId });
+
+        if (existingChef) {
+          throw new Error('Chef with the same name already exists for this seller.');
+        }
+
+        const newChef = new chefModel({
+          name: lowerCaseName,
+          commission,
+          charges,
+          address,
+          phone,
+          vehicleNumber,
+          homeNumber,
+          userid: userId,
+          sellerid: sellerId,
+        });
+
+        const savedChef = await newChef.save();
+
+        return {
+          ...savedChef._doc,
+          createdAt: savedChef.createdAt.toISOString(),
+        };
+      } catch (error) {
+        console.error("Error adding chef:", error);
+        throw new Error(`Error adding chef: ${error.message}`);
+      }
+    },
+    updateChef: async (_, { id, input }, context) => {
+      try {
+        const { userId, sellerId } = context;
+        if (!userId) {
+          throw new Error("You must be logged in");
+        }
+        const { name, commission, charges, address, phone, vehicleNumber, homeNumber } = input;
+
+        const lowerCaseName = name ? name.toLowerCase() : null;
+        const existingChef = lowerCaseName ? await chefModel.findOne({ name: { $regex: new RegExp('^' + lowerCaseName + '$', 'i') }, sellerid: sellerId }) : null;
+
+        if (existingChef && existingChef._id.toString() !== id) {
+          throw new Error('Chef with the updated name already exists for this seller.');
+        }
+
+        const updateFields = {};
+        if (lowerCaseName) updateFields.name = lowerCaseName;
+        if (commission !== undefined) updateFields.commission = commission;
+        if (charges !== undefined) updateFields.charges = charges;
+        if (address !== undefined) updateFields.address = address;
+        if (phone !== undefined) updateFields.phone = phone;
+        if (vehicleNumber !== undefined) updateFields.vehicleNumber = vehicleNumber;
+        if (homeNumber !== undefined) updateFields.homeNumber = homeNumber;
+
+        const updatedChef = await chefModel.findByIdAndUpdate(
+          id,
+          updateFields,
+          { new: true }
+        );
+
+        if (!updatedChef) {
+          throw new Error("Chef not found");
+        }
+
+        return updatedChef;
+      } catch (error) {
+        console.error("Error updating chef:", error);
+        throw new Error(`Error updating chef: ${error.message}`);
+      }
+    },
+    deleteChef: async (_, { id }, context) => {
+      try {
+        const { userId } = context;
+        if (!userId) {
+          throw new Error("You must be logged in");
+        }
+        const itemCount = await billSaleModel.countDocuments();
+
+        if (itemCount > 0) {
+          throw new Error("Cannot delete kitchen as it is referenced in itemsModel");
+        }
+        await chefModel.findByIdAndDelete(id);
+        return "Chef deleted successfully";
+      } catch (error) {
+        console.error("Error deleting chef:", error);
+        throw new Error(`Error deleting chef: ${error.message}`);
       }
     },
 

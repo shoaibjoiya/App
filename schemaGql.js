@@ -11,7 +11,7 @@ const typeDefs = `
     getPartyEntry(page: Int, rows: Int, search: String, acctype: String): PartyEntryResult!    
     getTaskById(id: ID!): Task
     getTask(page: Int, rows: Int, search: String): TaskResult!
-    getCategory(page: Int, rows: Int, search: String): CategoryResult!
+    getCategory(page: Int, rows: Int, search: String,sortby: String): CategoryResult!
     categorybyid(id: ID!): Category
     getExpcategory(page: Int, rows: Int, search: String): ExpCategoryResult!
     Expcategorybyid(id: ID!): ExpCategory
@@ -19,7 +19,7 @@ const typeDefs = `
     brandsbyid(id: ID!): Brand
     getUnits(page: Int, rows: Int, search: String): UnitResult!
     unitsbyid(id: ID!): Unit
-    getItems(page: Int, rows: Int, search: String, cateid: ID): ItemResult!
+    getItems(page: Int, rows: Int, search: String, cateid: ID,sortby: String): ItemResult!
     getStocks(warehouseId: String, cateid: String, brandid: String, page: Int): StockData
     itemById(id: ID!): ItemWithName
     getSaleBill(page: Int, rows: Int, search: String): BillSaleResult!
@@ -38,10 +38,20 @@ const typeDefs = `
     getExpenseEntries(page: Int, rows: Int, search: String): ExpenseEntriesResponse!
     getSellerById: Seller!
     getUserById: [User]
+    kitchenById(id: ID!): Kitchen
+    getKitchens(search: String, page: Int, rows: Int): GetKitchensResponse
+    waiterById(id: ID!): Waiter
+    getWaiters(search: String, page: Int, rows: Int): GetWaitersResponse
+    tableById(id: ID!): Table
+    getTables(search: String, page: Int, rows: Int): GetTablesResponse
+    riderById(id: ID!): Rider
+    getRiders(search: String, page: Int, rows: Int): GetRidersResponse
+    chefById(id: ID!): Chef
+    getChefs(search: String, page: Int, rows: Int): GetChefsResponse
 
 
- 
-    ReportgetsaleBills(warehouseId:ID,customerId:ID,userIds:ID,paymentStatus:String, startDate: String, endDate: String, page: Int): SaleBillReport! 
+    ReportgetsaleBills(warehouseId: ID,customerId: ID,userIds: ID,paymentStatus: String,startDate: String!,endDate: String!,page: Int): SaleBillReport!
+    ReportTodaySalesBetween(startDate: String!,endDate: String! ): Float!
     ReportTotalPendingCash: Float!
     ReportTotalSales: Float!
     ReportTodaySales: Float!
@@ -66,6 +76,67 @@ const typeDefs = `
     LedgerToatalSalpay(warehouseId: ID, customerId: ID): Float
     Ledgerotalsalereturnpay(warehouseId: ID, customerId: ID): Float
 }
+
+# Define the input type for adding new tables
+input AddNewTableInput {
+  name: String!
+  tablesize: String
+  reserved: Boolean
+  area: String
+}
+
+# Define the Table type
+type Table {
+  _id: ID!
+  name: String!
+  tablesize: String
+  reserved: Boolean
+  area: String
+  createdAt: String!
+}
+
+type GetTablesResponse {
+  tables: [Table]
+  tablesCount: Int
+}
+# Define the input type for adding new waiters
+input AddNewWaiterInput {
+  name: String!
+  commission: Float
+  charges: Float
+  address: String
+  phone: String
+  vehicleNumber: String
+  homeNumber: String
+}
+
+# Define the Waiter type
+type Waiter {
+  _id: ID!
+  name: String!
+  commission: Float
+  charges: Float
+  address: String
+  phone: String
+  vehicleNumber: String
+  homeNumber: String
+  createdAt: String!
+}
+
+
+# Define the response type for the paginated list of waiters
+type GetWaitersResponse {
+  waiters: [Waiter]
+  waitersCount: Int
+}
+
+
+
+type GetKitchensResponse {
+  kitchens: [Kitchen]
+  kitchensCount: Int
+}
+
 type StockData {
   stockItems: [Stock]
   totalCount: Int
@@ -308,7 +379,18 @@ type ExpCategory {
     name: String!
     createdAt: String!
   }
+input AddNewKitchenInput {
+  name: String!
+  description: String
+}
 
+# Define the Kitchen type
+type Kitchen {
+  _id: ID!
+  name: String!
+  description: String
+  createdAt: String
+}
   type Unit {
     _id: ID!
     name: String!
@@ -345,11 +427,24 @@ type ExpCategory {
     shippingcharges: Float
     totalamount: Float
     cashreceived: Float
+    receivedamount:Float
     billstatus: String
     paymentstatus: String
     paymentMode: String
     notes: String
     invoiceNumberfbr: String
+    customerName: String
+    mobileNumber: String
+    deliveryAddress: String
+    riderName: String
+    riderid: String
+    waiterName: String
+    waiterid: String
+    tableName: String
+    tabileid: String
+    chefid: String
+    kitchenid: String
+    orderType: String
     salecart: [SaleCartItem]
     createdAt: Date
     updatedAt: Date
@@ -398,6 +493,7 @@ type ExpCategory {
     quantity: Float
     discount: Float
     tax: Float
+    kotqty: Float
   }
   type SaleReturnCartItem {
     id: ID
@@ -719,6 +815,7 @@ type ExpCategory {
     country: String
     address: String
     notes: String
+    sortby: String
     posid: String
     fbrtoken: String
     createdAt: String
@@ -787,8 +884,80 @@ type ExpCategory {
     updatePartyEntry(id: ID!, input: UpdatepartyEntryInput!): PartyEntry
     deletePartyEntry(id: ID!): String
     updateSeller(id: ID!, input: UpdateSellerInput!): Seller
+    addKitchen(addNewKitchen: AddNewKitchenInput!): Kitchen
+    updateKitchen(id: ID!, input: AddNewKitchenInput!): Kitchen
+    deleteKitchen(id: ID!): String
+    addWaiter(addNewWaiter: AddNewWaiterInput!): Waiter
+    updateWaiter(id: ID!, input: AddNewWaiterInput!): Waiter
+    deleteWaiter(id: ID!): String
+    addTable(addNewTable: AddNewTableInput!): Table
+    updateTable(id: ID!, input: AddNewTableInput!): Table
+    deleteTable(id: ID!): String
+    addRider(addNewRider: AddNewRiderInput!): Rider
+    updateRider(id: ID!, input: AddNewRiderInput!): Rider
+    deleteRider(id: ID!): String
+    addChef(addNewChef: AddNewChefInput!): Chef
+    updateChef(id: ID!, input: AddNewChefInput!): Chef
+    deleteChef(id: ID!): String
   }
-  
+  # Define the input type for adding new chefs
+input AddNewChefInput {
+  name: String!
+  commission: Float
+  charges: Float
+  address: String
+  phone: String
+  vehicleNumber: String
+  homeNumber: String
+}
+
+# Define the Chef type
+type Chef {
+  _id: ID!
+  name: String!
+  commission: Float
+  charges: Float
+  address: String
+  phone: String
+  vehicleNumber: String
+  homeNumber: String
+  createdAt: String!
+}
+
+# Define the response type for the paginated list of chefs
+type GetChefsResponse {
+  chefs: [Chef]
+  chefsCount: Int
+}
+  # Define the input type for adding new riders
+input AddNewRiderInput {
+  name: String!
+  commission: Float
+  charges: Float
+  address: String
+  phone: String
+  vehicleNumber: String
+  homeNumber: String
+}
+
+# Define the Rider type
+type Rider {
+  _id: ID!
+  name: String!
+  commission: Float
+  charges: Float
+  address: String
+  phone: String
+  vehicleNumber: String
+  homeNumber: String
+  createdAt: String!
+}
+
+# Define the response type for the paginated list of riders
+type GetRidersResponse {
+  riders: [Rider]
+  ridersCount: Int
+}
   type updateBillSaleCashResponse {
     message: String!
   }
@@ -809,6 +978,7 @@ type ExpCategory {
     city: String
     country: String
     address: String
+    sortby: String
     posid: String
     fbrtoken: String
     notes: String
@@ -923,6 +1093,7 @@ input CreateTaskInput {
     quantity: Float
     discount: Float
     tax: Float
+    kotqty: Float
   }
 
   input CreateBillSaleInput {
@@ -933,12 +1104,25 @@ input CreateTaskInput {
     saletax: Float
     shippingcharges: Float
     cashreceived:Float
+    receivedamount:Float
     totalamount: Float
     billstatus: String
     paymentstatus: String
     paymentMode: String
     notes: String
+    customerName: String
+    mobileNumber: String
+    deliveryAddress: String
     invoiceNumberfbr: String
+    riderName: String
+    riderid: String
+    waiterName: String
+    waiterid: String
+    tableName: String
+    tabileid: String
+    chefid: String
+    orderType: String
+    kitchenid: String
     salecart: [SaleCartItemInput]
   }
   input CreateReturnBillSaleInput {
