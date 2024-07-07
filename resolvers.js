@@ -210,9 +210,9 @@ const resolvers = {
             args.search.replace(/[\\\[\]()+?.*]/g, (c) => '\\' + c),
             'i'
           );
-          query = { name: search, userid: userId };
+          query = { name: search, sellerid: sellerId };
         } else {
-          query = { userid: userId };
+          query = { sellerid: sellerId };
         }
 
         const expcategories = await expensecategoryModel
@@ -888,7 +888,7 @@ const resolvers = {
       }
     },
     getExpenseEntries: async (_, args, context) => {
-      const { userId } = context;
+      const { userId,sellerId} = context;
 
       try {
         if (!userId) {
@@ -1416,6 +1416,36 @@ const resolvers = {
         return null;
       }
     },
+    ReportTotalSalesUser: async (_, { startDate, endDate }, context) => {
+      try {
+        const { userId } = context;
+        const startOfDay = new Date(startDate);
+        const endOfDay = new Date(endDate);
+    
+        const todaySales = await billSaleModel.aggregate([
+          {
+            $match: {
+              userid: new mongoose.Types.ObjectId(userId),
+              billdate: {
+                $gte: startOfDay,
+                $lte: endOfDay
+              }
+            }
+          },
+          {
+            $group: {
+              _id: null,
+              totalSales: { $sum: "$totalamount" }
+            }
+          }
+        ]);
+    
+        return todaySales.length > 0 ? todaySales[0].totalSales : 0;
+      } catch (error) {
+        console.error('Error:', error);
+        return null;
+      }
+    },    
     ReportTodaySales: async (_, __, context) => {
       try {
         const { sellerId } = context;
@@ -2243,7 +2273,7 @@ const resolvers = {
 
         // Sign the token with userId and set expiration to 10 hours
         const token = jwt.sign(
-          { userId: user._id,name:user.name ,role: user.role, sellerId: user.sellerid },
+          { userId: user._id,name:user.name ,role: user.role, sellerId: user.sellerid,sellerInfo },
           process.env.JWT_SECRET,
           { expiresIn: '10h' }
         );
@@ -2324,18 +2354,15 @@ const resolvers = {
       }
     },
     DelteCategory: async (_, args, context) => {
-      const { userId } = context;
+      const { userId, role } = context;
+      
       if (!userId) {
         throw new Error("You must be logged in");
       }
-
-      // Count the number of items associated with the category ID
-      const itemCount = await itemsModel.countDocuments({ cateid: args.id });
-
-      if (itemCount > 0) {
-        throw new Error("Cannot delete category as it is referenced in itemModel");
+     //console.log(role);
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
-
       // If no items are associated with the category, proceed with deletion
       await categoryModel.findByIdAndDelete(args.id);
       return "Category deleted successfully";
@@ -2409,9 +2436,13 @@ const resolvers = {
       }
     },
     DelteExpCategory: async (_, args, context) => {
-      const { userId } = context;
+      const { userId, role } = context;
       if (!userId) {
         throw new Error("You must be logged in");
+      }
+     //console.log(role);
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
       // Count the number of items associated with the category ID
       const itemCount = await ExpenseEntryModel.countDocuments({ cateid: args.id });
@@ -2496,9 +2527,13 @@ const resolvers = {
       }
     },
     deleteWarehouse: async (_, { id }, context) => {
-      const { userId } = context;
+      const { userId, role } = context;
       if (!userId) {
         throw new Error("You must be logged in");
+      }
+     //console.log(role);
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
       // Count the number of items associated with the brand ID
       const itemCount = await billSaleModel.countDocuments();
@@ -2580,9 +2615,13 @@ const resolvers = {
       }
     },
     DelteBrands: async (_, args, context) => {
-      const { userId } = context;
+      const { userId, role } = context;
       if (!userId) {
         throw new Error("You must be logged in");
+      }
+     //console.log(role);
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
 
       // Count the number of items associated with the brand ID
@@ -2672,9 +2711,13 @@ const resolvers = {
       }
     },
     DelteUnits: async (_, args, context) => {
-      const { userId } = context;
+      const { userId, role } = context;
       if (!userId) {
         throw new Error("You must be logged in");
+      }
+     //console.log(role);
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
 
       // Count the number of items associated with the unit ID
@@ -2849,9 +2892,13 @@ const resolvers = {
       }
     },
     deleteItem: async (_, args, context) => {
-      const { userId } = context;
+      const { userId, role } = context;
       if (!userId) {
         throw new Error("You must be logged in");
+      }
+     //console.log(role);
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
       // Count the number of items associated with the unit ID
       const itemCount = await billSaleModel.countDocuments();
@@ -3060,9 +3107,13 @@ const resolvers = {
       }
     },
     deleteBillSale: async (_, { id }, context) => {
-      const { userId, sellerId } = context;
+      const { userId, role } = context;
       if (!userId) {
         throw new Error("You must be logged in");
+      }
+     //console.log(role);
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
     
       try {
@@ -3261,9 +3312,13 @@ const resolvers = {
       }
     },
     deleteReturnBillSale: async (_, { id }, context) => {
-      const { userId, sellerId } = context;
+      const { userId, role } = context;
       if (!userId) {
         throw new Error("You must be logged in");
+      }
+     //console.log(role);
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
 
       try {
@@ -3492,10 +3547,13 @@ const resolvers = {
       }
     },
     deleteBillPurchase: async (_, { id }, context) => {
-      const { userId } = context;
-
+      const { userId, role } = context;
       if (!userId) {
         throw new Error("You must be logged in");
+      }
+     //console.log(role);
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
 
       try {
@@ -3694,10 +3752,13 @@ const resolvers = {
       }
     },
     deleteBillPurchaseReturn: async (_, { id }, context) => {
-      const { userId } = context;
-
+      const { userId, role } = context;
       if (!userId) {
         throw new Error("You must be logged in");
+      }
+     //console.log(role);
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
 
       try {
@@ -3782,10 +3843,13 @@ const resolvers = {
       }
     },
     deleteBillQuotation: async (_, { id }, context) => {
-      const { userId } = context;
-
+      const { userId, role } = context;
       if (!userId) {
         throw new Error("You must be logged in");
+      }
+     //console.log(role);
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
 
       await billOrdersModel.findByIdAndDelete(id);
@@ -3871,10 +3935,13 @@ const resolvers = {
       }
     },    
     deleteBillTransfer: async (_, { id }, context) => {
-      const { userId } = context;
-    
+      const { userId, role } = context;
       if (!userId) {
         throw new Error("You must be logged in");
+      }
+     //console.log(role);
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
     
       try {
@@ -3991,10 +4058,13 @@ const resolvers = {
         }
     },
     deleteBillAdjustment: async (_, { id }, context) => {
-      const { userId } = context;
-
+      const { userId, role } = context;
       if (!userId) {
         throw new Error("You must be logged in");
+      }
+     //console.log(role);
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
 
       try {
@@ -4071,10 +4141,13 @@ const resolvers = {
       }
     },
     deleteProject: async (_, { id }, context) => {
-      const { userId } = context;
-
+      const { userId, role } = context;
       if (!userId) {
         throw new Error("You must be logged in");
+      }
+     //console.log(role);
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
 
       await ProjectModel.findByIdAndDelete(id);
@@ -4082,10 +4155,13 @@ const resolvers = {
       return "Project deleted successfully";
     },
     deleteTask: async (_, { id }, context) => {
-      const { userId } = context;
-
+      const { userId, role } = context;
       if (!userId) {
         throw new Error("You must be logged in");
+      }
+     //console.log(role);
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
 
       await TaskModel.findByIdAndDelete(id);
@@ -4219,10 +4295,13 @@ const resolvers = {
       }
     },
     deleteExpenseEntry: async (_, { id }, context) => {
-      const { userId } = context;
-
+      const { userId, role } = context;
       if (!userId) {
-        throw new Error('You must be logged in');
+        throw new Error("You must be logged in");
+      }
+     //console.log(role);
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
 
       await ExpenseEntryModel.findByIdAndDelete(id);
@@ -4319,10 +4398,13 @@ const resolvers = {
       }
     },
     deletePartyEntry: async (_, { id }, context) => {
-      const { userId } = context;
-
+      const { userId, role } = context;
       if (!userId) {
-        throw new Error('You must be logged in');
+        throw new Error("You must be logged in");
+      }
+     //console.log(role);
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
       const itemCounts = await billSaleModel.countDocuments({ custid: id });
 
@@ -4431,9 +4513,13 @@ const resolvers = {
     },
     deleteKitchen: async (_, { id }, context) => {
       try {
-        const { userId } = context;
+        const { userId, role } = context;
         if (!userId) {
           throw new Error("You must be logged in");
+        }
+       //console.log(role);
+        if (role === 'subuser') {
+          throw new Error("You do not have permission to delete categories. Please contact an admin.");
         }
 
         const itemCount = await billSaleModel.countDocuments();
@@ -4535,10 +4621,14 @@ const resolvers = {
     },
     deleteWaiter: async (_, { id }, context) => {
       try {
-        const { userId } = context;
-        if (!userId) {
-          throw new Error("You must be logged in");
-        }
+        const { userId, role } = context;
+      if (!userId) {
+        throw new Error("You must be logged in");
+      }
+     //console.log(role);
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete categories. Please contact an admin.");
+      }
         const itemCount = await billSaleModel.countDocuments();
 
         if (itemCount > 0) {
@@ -4629,9 +4719,13 @@ const resolvers = {
     },
     deleteTable: async (_, { id }, context) => {
       try {
-        const { userId } = context;
+        const { userId, role } = context;
         if (!userId) {
           throw new Error("You must be logged in");
+        }
+       //console.log(role);
+        if (role === 'subuser') {
+          throw new Error("You do not have permission to delete categories. Please contact an admin.");
         }
         const itemCount = await billSaleModel.countDocuments();
 
@@ -4730,10 +4824,14 @@ const resolvers = {
     },
     deleteRider: async (_, { id }, context) => {
       try {
-        const { userId } = context;
-        if (!userId) {
-          throw new Error("You must be logged in");
-        }
+        const { userId, role } = context;
+      if (!userId) {
+        throw new Error("You must be logged in");
+      }
+     //console.log(role);
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete categories. Please contact an admin.");
+      }
         const itemCount = await billSaleModel.countDocuments();
 
         if (itemCount > 0) {
@@ -4831,9 +4929,13 @@ const resolvers = {
     },
     deleteChef: async (_, { id }, context) => {
       try {
-        const { userId } = context;
+        const { userId, role } = context;
         if (!userId) {
           throw new Error("You must be logged in");
+        }
+       //console.log(role);
+        if (role === 'subuser') {
+          throw new Error("You do not have permission to delete categories. Please contact an admin.");
         }
         const itemCount = await billSaleModel.countDocuments();
 

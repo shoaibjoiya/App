@@ -54,6 +54,7 @@ const typeDefs = `
     ReportTodaySalesBetween(startDate: String!,endDate: String! ): Float!
     ReportTotalPendingCash: Float!
     ReportTotalSales: Float!
+   ReportTotalSalesUser(startDate: String!, endDate: String!): Float
     ReportTodaySales: Float!
     ReportPreviousDaySales: Float!
     ReportgetsalereturnBills(warehouseId:ID,customerId:ID,userIds:ID,paymentStatus:String, startDate: String, endDate: String, page: Int): SaleReturnBillReport!
