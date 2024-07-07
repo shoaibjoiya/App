@@ -16,7 +16,7 @@ import dotenv from 'dotenv'
 dotenv.config()
 // Required logic for integrating with Express
 const app = express();
-// Our httpServer handles incoming requests to our Express app.
+// Our httpServer handles incoming requests to our Express app..
 // Below, we tell Apollo Server to "drain" this httpServer,
 // enabling our servers to shut down gracefully.
 const httpServer = http.createServer(app);
