@@ -73,11 +73,13 @@ app.use(
       
       let userId = null;
       let sellerId = null;
+      let role = null;
       if (authorization) {
         try {
           const decodedToken = jwt.verify(authorization, process.env.JWT_SECRET);
           userId = decodedToken.userId;
           sellerId = decodedToken.sellerId;
+          role     = decodedToken.role;
         } catch (error) {
           // Handle invalid token
           console.error('Invalid token:', error);
@@ -85,7 +87,7 @@ app.use(
       }
   
       // Return the context object
-      return { userId ,sellerId};
+      return { userId ,sellerId,role};
     },
   }),
 );
