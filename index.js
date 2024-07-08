@@ -6,7 +6,7 @@ import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHt
 import { ApolloServerPluginLandingPageDisabled } from '@apollo/server/plugin/disabled';
 import express from 'express';
 import http from 'http';
-import cors from 'cors';
+import cors from 'cors'; 
 import typeDefs from './schemaGql.js'
 import resolvers from './resolvers.js'
 import jwt from 'jsonwebtoken'
