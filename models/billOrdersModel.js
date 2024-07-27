@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const billOrdersSchema = mongoose.Schema({
   billdate: { type: Date, required: true },
-  orderid: { type: String, required: true },
+  orderid: { type: Number, required: true },
   whareid: { type: mongoose.Schema.Types.ObjectId, ref: 'warehouseModel', required: true },
   custid: { type: mongoose.Schema.Types.ObjectId, ref: 'partyEntryModel', required: true },
   discount: { type: Number, default: 0 },

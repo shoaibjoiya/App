@@ -22,7 +22,8 @@ const typeDefs = `
     getItems(page: Int, rows: Int, search: String, cateid: ID,sortby: String): ItemResult!
     getStocks(warehouseId: String, cateid: String, brandid: String, page: Int): StockData
     itemById(id: ID!): ItemWithName
-    getSaleBill(page: Int, rows: Int, search: String): BillSaleResult!
+    getSaleBill(page: Int, rows: Int, search: String,whareid: String ,billstatus: String): BillSaleResult!
+    getWasteBill(page: Int, rows: Int, search: String): BillWasteResult
     saleBillById(id: ID!): BillSaleWithName
     getSaleReturnBill(page: Int, rows: Int, search: String): BillSaleReturnResult!
     saleReturnBillById(id: ID!): BillReturnSaleWithName
@@ -48,7 +49,8 @@ const typeDefs = `
     getRiders(search: String, page: Int, rows: Int): GetRidersResponse
     chefById(id: ID!): Chef
     getChefs(search: String, page: Int, rows: Int): GetChefsResponse
-
+    getProductionBills(search: String, page: Int, rows: Int): ProductionBillPagination
+    getProductionDoBills(search: String, page: Int, rows: Int): ProductionDoBillPagination
 
     ReportgetsaleBills(warehouseId: ID,customerId: ID,userIds: ID,paymentStatus: String,startDate: String!,endDate: String!,page: Int): SaleBillReport!
     ReportTodaySalesBetween(startDate: String!,endDate: String! ): Float!
@@ -76,6 +78,8 @@ const typeDefs = `
     LedgerotalPurchasereturnpay(warehouseId: ID!, customerId: ID!): Float
     LedgerToatalSalpay(warehouseId: ID, customerId: ID): Float
     Ledgerotalsalereturnpay(warehouseId: ID, customerId: ID): Float
+    getSaleBills:  BillSaleWithName
+
 }
 
 # Define the input type for adding new tables
@@ -145,7 +149,7 @@ type StockData {
 type Stock {
   productId: ItemWithName
   warehouseId: ID
-  quantity: Int
+  quantity: Float
   createdAt: String
 }
 type TotalExpense {
@@ -277,6 +281,10 @@ input CreateExpenseEntryInput {
     saleBills: [BillSaleWithName!]!
     saleBillCount: Int!
   }
+  type BillWasteResult {
+    wasteBills: [BillWasteWithName!]!
+    wasteBillCount: Int!
+  }
   type BillSaleReturnResult {
     saleReturnBills: [BillReturnSaleWithName!]!
     saleReturnBillCount: Int!
@@ -310,7 +318,14 @@ input CreateExpenseEntryInput {
     projectid: String!
     userid: String!
   }
-  
+  type ProductionBillPagination {
+  productionBill: [ProductionItem!]!
+  totalCount: Int!
+}
+    type ProductionDoBillPagination {
+  productionBill: [ProductionDoItem!]!
+  totalCount: Int!
+}
   type ItemWithName {
     _id: ID!
     productname: String!
@@ -367,7 +382,7 @@ input CreateExpenseEntryInput {
   type Category {
     _id: ID!
     name: String!
-    createdAt: String!
+    createdAt: String
   }
 type ExpCategory {
     _id: ID!
@@ -383,6 +398,7 @@ type ExpCategory {
 input AddNewKitchenInput {
   name: String!
   description: String
+  categoryIds: [ID]
 }
 
 # Define the Kitchen type
@@ -391,7 +407,8 @@ type Kitchen {
   name: String!
   description: String
   createdAt: String
-}
+  categoryIds: [Category]
+  }
   type Unit {
     _id: ID!
     name: String!
@@ -418,7 +435,7 @@ type Kitchen {
     updatedAt: Date
   }
   type BillSaleWithName {
-    _id: ID!
+    _id: ID
     saleid:String
     billdate: Date
     whareid: Warehouse
@@ -450,6 +467,41 @@ type Kitchen {
     createdAt: Date
     updatedAt: Date
   }
+  
+   type BillWasteWithName {
+    _id: ID!
+    saleid:String
+    billdate: Date
+    whareid: Warehouse
+    custid: String
+    discount: Float
+    saletax: Float
+    shippingcharges: Float
+    totalamount: Float
+    cashreceived: Float
+    receivedamount:Float
+    billstatus: String
+    paymentstatus: String
+    paymentMode: String
+    notes: String
+    invoiceNumberfbr: String
+    customerName: String
+    mobileNumber: String
+    deliveryAddress: String
+    riderName: String
+    riderid: String
+    waiterName: String
+    waiterid: String
+    tableName: String
+    tabileid: String
+    chefid: String
+    kitchenid: String
+    orderType: String
+    wastecart: [WasteCartItem]
+    createdAt: Date
+    updatedAt: Date
+  }
+
   type BillReturnSale {
     _id: ID!
     billdate: Date
@@ -495,6 +547,16 @@ type Kitchen {
     discount: Float
     tax: Float
     kotqty: Float
+    
+  }
+      type WasteCartItem {
+    id: ID
+    name: String
+    price: Float
+    quantity: Float
+    discount: Float
+    tax: Float
+
   }
   type SaleReturnCartItem {
     id: ID
@@ -850,6 +912,8 @@ type Kitchen {
     addItem(item: AddItemInput!): Item
     updateItem(id: ID!, updatedItem: AddItemInput!): Item
     deleteItem(id: ID!): String
+    createBillWaste(CreateWasteSale: CreateBillWasteInput!): BillWasteWithName
+    deleteBillWaste(id: ID!): String
     createBillSale(CreateBillSale: CreateBillSaleInput!): BillSaleWithName
     updateBillSale(id: ID!,UpdateBillSale: CreateBillSaleInput!): BillSaleWithName
     updateBillSaleCash(id: ID!,cashReceived: Float!):updateBillSaleCashResponse
@@ -900,7 +964,64 @@ type Kitchen {
     addChef(addNewChef: AddNewChefInput!): Chef
     updateChef(id: ID!, input: AddNewChefInput!): Chef
     deleteChef(id: ID!): String
+    createProductionItem(input: ProductionInput!): ProductionItem!
+    deleteproductionList(id: ID!): String
+    createProductionDo(input: ProductionDoInput!): ProductionDoItem
+    deleteproductionDo(id: ID!): String
+ }
+
+type ProductionDoItem {
+  _id: ID!
+  formulaName: String
+  prodcart: [ProdCartItem!]!
+  whareid: ID!
+  createdAt: String
+  updatedAt: String
+}
+
+type ProdCartItem {
+  productId: ItemWithName
+  qty: Float!
+}
+
+input ProductionDoInput {
+  formulaName: String
+  prodcart: [ProductInput!]!
+  whareid: ID!
+}
+
+input ProductInput {
+  productId: ID!
+  qty: Float!
+}
+
+ type RawMaterial {
+    rawId: ItemWithName!
+    qtyUsed: Float!
+    cost: Float!
   }
+
+  type ProductionItem {
+    _id: ID!
+    productId:ItemWithName!
+    rawMaterialsUsed: [RawMaterial!]!
+    formulaName: String!
+    createdAt: String
+    updatedAt: String
+  }
+
+  input RawMaterialInput {
+    rawId: ID!
+    qtyUsed: Float!
+  }
+
+  input ProductionInput {
+    productId: ID!
+    rawMaterialsUsed: [RawMaterialInput!]!
+    formulaName: String!
+  }
+
+
   # Define the input type for adding new chefs
 input AddNewChefInput {
   name: String!
@@ -1086,7 +1207,15 @@ input CreateTaskInput {
     tax: String
     ordernote: String
   }
-
+ input WasteCartItemInput {
+    id: ID
+    name: String
+    price: Float
+    quantity: Float
+    discount: Float
+    tax: Float
+   
+  }
   input SaleCartItemInput {
     id: ID
     name: String
@@ -1125,6 +1254,36 @@ input CreateTaskInput {
     orderType: String
     kitchenid: String
     salecart: [SaleCartItemInput]
+  }
+    
+  input CreateBillWasteInput {
+    billdate: Date!
+    whareid: String!
+    custid: String!
+    discount: Float
+    saletax: Float
+    shippingcharges: Float
+    cashreceived:Float
+    receivedamount:Float
+    totalamount: Float
+    billstatus: String
+    paymentstatus: String
+    paymentMode: String
+    notes: String
+    customerName: String
+    mobileNumber: String
+    deliveryAddress: String
+    invoiceNumberfbr: String
+    riderName: String
+    riderid: String
+    waiterName: String
+    waiterid: String
+    tableName: String
+    tabileid: String
+    chefid: String
+    orderType: String
+    kitchenid: String
+    wastecart: [WasteCartItemInput]
   }
   input CreateReturnBillSaleInput {
     billdate: Date!

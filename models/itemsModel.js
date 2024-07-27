@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 
 const itemsSchema = new mongoose.Schema({
   productname: { type: String, required: true },
-  code:        { type: String, required: true },
+  code:        { type: Number, required: true },
   brandid:     { type: mongoose.Schema.Types.ObjectId, ref:'brandsModel', required: true     },
   cateid:      { type: mongoose.Schema.Types.ObjectId, ref:'categoryModel', required: true   },
   unitid:      { type: mongoose.Schema.Types.ObjectId, ref:'unitsModel', required: true      },

@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const billPurchaseSchema = mongoose.Schema({
   billdate: { type: Date, required: true },
-  purid: { type: String, required: true },
+  purid: { type: Number, required: true },
   whareid: { type: mongoose.Schema.Types.ObjectId, ref: 'warehouseModel', required: true },
   custid: { type: mongoose.Schema.Types.ObjectId, ref: 'partyEntryModel', required: true },
   discount: { type: Number, default: 0 },

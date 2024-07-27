@@ -1,10 +1,10 @@
 import mongoose from 'mongoose';
 
-const billSaleSchema = mongoose.Schema({
+const billWasteSchema = mongoose.Schema({
   billdate: { type: Date, required: true },
-  saleid: { type: Number, required: true },
+  wasteid: { type: Number, required: true },
   whareid: { type: mongoose.Schema.Types.ObjectId, ref: 'warehouseModel', required: true },
-  custid: { type: mongoose.Schema.Types.ObjectId, ref: 'partyEntryModel', required: true },
+  custid: { type: String },
   customerName: { type: String },
   mobileNumber: { type: String },
   deliveryAddress: { type: String },
@@ -15,7 +15,7 @@ const billSaleSchema = mongoose.Schema({
   tableName: { type: String },
   tabileid: { type: String },
   chefid: { type: String },
-  kitchenid: {  type: mongoose.Schema.Types.ObjectId, ref: 'kitchenModel' },
+  kitchenid: { type: String },
   orderType: { type: String },
   discount: { type: Number, default: 0 }, // Corrected syntax for default value
   saletax: { type: Number, default: 0 }, 
@@ -28,11 +28,11 @@ const billSaleSchema = mongoose.Schema({
   paymentMode: { type: String, default: 'cash' },  
   invoiceNumberfbr: { type: String}, 
   notes: { type: String }, // Corrected syntax for default value
-  salecart: { type: Array, required: true },
+  wastecart: { type: Array, required: true },
   userid: { type: mongoose.Schema.Types.ObjectId, ref: 'userModel', required: true },
   sellerid: { type: mongoose.Schema.Types.ObjectId, ref: 'sellerModel', required: true }
 }, { timestamps: true });
 
-const billSaleModel = mongoose.model("billSaleModel", billSaleSchema); // Changed model name to "Bill"
+const billWasteModel = mongoose.model("billWasteModel", billWasteSchema); // Changed model name to "Bill"
 
-export default billSaleModel;
+export default billWasteModel;

@@ -27,7 +27,9 @@ import  './models/waiterModel.js';
 import  './models/chefModel.js';
 import './models/riderModel.js';
 import './models/tableModel.js';
-//import tableModel from './models/tableModel.js';
+import billWasteModel from './models/billWasteModel.js';
+import productionListModel from './models/productionListModel.js';
+import productionModel from './models/productionModel.js';
 
 
 
@@ -529,6 +531,58 @@ const resolvers = {
         if (!userId) {
           throw new Error('You must be logged in with a mobile number.');
         }
+    
+        // Initialize query with userId
+        let query = { userid: userId };
+    
+        // Add search term if provided
+        if (args.search) {
+          const search = new RegExp(
+            args.search.replace(/[\\\[\]()+?.*]/g, (c) => '\\' + c),
+            'i'
+          );
+          query.custid = search;
+        }
+    
+        // Add whareid filter if provided
+        if (args.whareid) {
+          query.whareid = args.whareid;
+        }
+    
+        // Add billstatus filter if provided
+        if (args.billstatus) {
+          query.billstatus = args.billstatus;
+        }
+    
+        // Fetch sale bills with the constructed query
+        const saleBills = await billSaleModel
+          .find(query)
+          .populate('whareid', '_id name')
+          .populate('custid', '_id name')
+          .sort({ createdAt: -1 })
+          .skip((args.page - 1) * args.rows)
+          .limit(args.rows);
+    
+        // Count total documents matching the query
+        const saleBillCount = await billSaleModel.countDocuments(query);
+    
+        return {
+          saleBills: saleBills.map((saleBill) => ({
+            ...saleBill._doc,
+            createdAt: saleBill.createdAt.toISOString(),
+          })),
+          saleBillCount: saleBillCount,
+        };
+      } catch (err) {
+        throw err;
+      }
+    },
+    getWasteBill: async (_, args, context) => {
+      const { userId } = context;
+      try {
+        if (!userId) {
+          throw new Error('You must be logged in with a mobile number.');
+        }
 
         let query = {};
         if (args.search) {
@@ -536,27 +590,26 @@ const resolvers = {
             args.search.replace(/[\\\[\]()+?.*]/g, (c) => '\\' + c),
             'i'
           );
-          query = { custid: search, userid: userId };
+          query = {  userid: userId };
         } else {
           query = { userid: userId };
         }
 
-        const saleBills = await billSaleModel
+        const wastebills = await billWasteModel
           .find(query)
           .populate('whareid', '_id name ')
-          .populate('custid', '_id name ')
           .sort({ createdAt: -1 })
           .skip((args.page - 1) * args.rows)
           .limit(args.rows);
 
-        const saleBillCount = await billSaleModel.countDocuments(query);
+        const wasteBillCount = await billWasteModel.countDocuments(query)||0;
 
         return {
-          saleBills: saleBills.map((saleBill) => ({
-            ...saleBill._doc,
-            createdAt: saleBill.createdAt.toISOString(),
+          wasteBills: wastebills.map((wasteBills) => ({
+            ...wasteBills._doc,
+            createdAt: wasteBills.createdAt.toISOString(),
           })),
-          saleBillCount: saleBillCount,
+          wasteBillCount: wasteBillCount,
         };
       } catch (err) {
         throw err;
@@ -782,6 +835,103 @@ const resolvers = {
         throw err;
       }
     },
+    getProductionBills: async (_, args, context) => {
+      const { userId } = context;
+      try {
+        if (!userId) {
+          throw new Error('You must be logged in.');
+        }
+    
+        // Find the product by name to get its ID
+        let productIds = [];
+        if (args.search) {
+          const search = new RegExp(args.search.replace(/[\\\[\]()+?.*]/g, '\\$&'), 'i');
+          const products = await itemsModel.find({ productname: search });
+          productIds = products.map(product => product._id);
+        }
+    
+        // Create the query for production bills
+        let query = { userid: userId };
+        if (productIds.length > 0) {
+          query = {
+            ...query,
+            productId: { $in: productIds }
+          };
+        }
+    
+        const productionList = await productionListModel
+          .find(query)
+          .populate('productId', '_id productname') // Populate the productId field with name
+          .populate({
+            path: 'rawMaterialsUsed.rawId',
+            select: '_id productname cost',
+          })
+          .sort({ createdAt: -1 })
+          .skip((args.page - 1) * args.rows)
+          .limit(args.rows || 10);
+    
+        const totalCount = await productionListModel.countDocuments(query);
+    
+        return {
+          productionBill: productionList.map((item) => ({
+            ...item._doc,
+            createdAt: item.createdAt.toISOString(),
+            updatedAt: item.updatedAt.toISOString(),
+          })),
+          totalCount,
+        };
+      } catch (err) {
+        console.error("Error fetching production bills:", err);
+        throw new Error(`Error fetching production bills: ${err.message}`);
+      }
+    },   
+    getProductionDoBills: async (_, args, context) => {
+      const { userId } = context;
+      try {
+        if (!userId) {
+          throw new Error('You must be logged in.');
+        }
+    
+        let productIds = [];
+        if (args.search) {
+          const search = new RegExp(args.search.replace(/[\\\[\]()+?.*]/g, '\\$&'), 'i');
+          const products = await itemsModel.find({ productname: search });
+          productIds = products.map(product => product._id);
+        }
+    
+        let query = { userid: userId };
+        if (productIds.length > 0) {
+          query = {
+            ...query,
+            'prodcart.productId': { $in: productIds }
+          };
+        }
+    
+        const productionList = await productionModel
+          .find(query)
+          .populate({
+            path: 'prodcart.productId',
+            select: '_id productname'
+          })
+          .sort({ createdAt: -1 })
+          .skip((args.page - 1) * args.rows)
+          .limit(args.rows || 10);
+    
+        const totalCount = await productionModel.countDocuments(query);
+    
+        return {
+          productionBill: productionList.map((item) => ({
+            ...item._doc,
+            createdAt: item.createdAt.toISOString(),
+            updatedAt: item.updatedAt.toISOString(),
+          })),
+          totalCount,
+        };
+      } catch (err) {
+        console.error("Error fetching production bills:", err);
+        throw new Error(`Error fetching production bills: ${err.message}`);
+      }
+    }, 
     getAdjustmentBill: async (_, args, context) => {
       const { userId } = context;
       try {
@@ -2106,8 +2256,6 @@ const resolvers = {
 
     },
    
-
-
   },
   Mutation: 
   {
@@ -2286,13 +2434,19 @@ const resolvers = {
     },
     addCategory: async (_, { addNewCategory }, context) => {
       try {
-        const { userId, sellerId } = context;
+        const { userId, sellerId, role } = context;
         let { name } = addNewCategory;
 
         if (!userId) {
           throw new Error("You must be logged in");
         }
-
+  // Check if the user has the correct role
+      // if (!['seller', 'subuser'].includes(role)) {
+      //   throw new Error("You do not have the required permissions to add a category");
+      // }
+      if (role !== 'seller') {
+        throw new Error("You do not have the required permissions to add a category");
+      }
         if (!name) {
           throw new Error("Name is required");
         }
@@ -2909,6 +3063,139 @@ const resolvers = {
       await itemsModel.findByIdAndDelete(args.id);
       return "Items Delte successfully"
     },
+    deleteBillWaste: async (_, { id }, context) => {
+      const { userId, role } = context;
+      if (!userId) {
+        throw new Error("You must be logged in");
+      }
+     //console.log(role);
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete categories. Please contact an admin.");
+      }
+    
+      try {
+        // Find the bill sale to be deleted
+        const billSale = await billWasteModel.findById(id);
+        if (!billSale) {
+          throw new Error("Bill sale not found");
+        }
+       // Delete the bill sale
+        await billWasteModel.findByIdAndDelete(id);
+        // Restore stock for each item in the deleted bill sale
+        for (const item of billSale.wastecart) {
+          const { id: productId, quantity } = item; // Changed 'id' to 'productId'
+    
+          // Find the stock entry for the warehouse and product
+          let stock = await stockModel.findOne({ productId, warehouseId: billSale.whareid }); // Changed 'id' to 'productId'
+    
+          if (stock) {
+            // If stock entry exists, update the quantity
+            stock.quantity += quantity;
+            await stock.save(); // Moved the save operation inside the if block
+          }
+        }
+   
+       
+    
+        return "Bill waste deleted successfully";
+      } catch (error) {
+        throw new Error(`Error deleting bill sale: ${error.message}`);
+      }
+    }, 
+    createBillWaste: async (_, { CreateWasteSale }, context) => {
+      const { userId, sellerId } = context;
+      if (!userId) {
+        throw new Error("You must be logged in");
+      }
+    
+      const {
+        billdate, whareid, custid, discount, saletax, shippingcharges,
+        totalamount, billstatus, paymentstatus, paymentMode, cashreceived, receivedamount,
+        notes, invoiceNumberfbr, wastecart, customerName, mobileNumber, deliveryAddress,
+        riderName, riderid, waiterName, waiterid, tableName, tabileid,chefid, orderType,kitchenid
+      } = CreateWasteSale;
+    
+      // Check if the required fields are provided
+      if (!billdate || !whareid  ) {
+        throw new Error("billdate, whareid, custid are required fields");
+      }
+    
+      // Find the maximum saleid in the database
+      const maxItem = await billWasteModel.findOne({}, { wasteid: 1 }).sort({ 'wasteid': -1 });
+      let newCode = maxItem && maxItem.wasteid ? parseInt(maxItem.wasteid) + 1 : 1;
+      
+      try {
+        // Create a new bill sale instance
+        const newBillSale = new billWasteModel({
+          billdate,
+          wasteid: newCode,
+          whareid,  // Assuming whareid is a valid ID
+          custid,   // Assuming custid is a valid ID
+          discount,
+          saletax,
+          shippingcharges,
+          totalamount,
+          billstatus,
+          paymentstatus,
+          paymentMode,
+          cashreceived,
+          receivedamount,
+          notes,
+          chefid,
+          wastecart,
+          invoiceNumberfbr,
+          customerName,
+          mobileNumber,
+          deliveryAddress,
+          riderName,
+          riderid,
+          waiterName,
+          waiterid,
+          tableName,
+          tabileid,
+          orderType,
+          kitchenid,
+          userid: userId,
+          sellerid: sellerId, // Assign the sellerid obtained from the user
+        });
+    
+        // Save the new bill sale
+        const savedBillSale = await newBillSale.save();
+    
+        if (!savedBillSale) {
+          throw new Error("Failed to create bill sale");
+        }
+    
+        // Update stock levels for each item in salecart
+        for (const item of wastecart) {
+          const { id, quantity } = item;
+    
+          // Find or create stock entry for the warehouse and product
+          let stock = await stockModel.findOne({ productId: id, warehouseId: whareid });
+    
+          if (!stock) {
+            // If no stock entry exists, create a new one
+            stock = new stockModel({ productId: id, warehouseId: whareid, quantity: -quantity, sellerid: sellerId });
+          } else {
+            // If stock entry exists, update the quantity
+            stock.quantity -= quantity;
+          }
+    
+          // Save the updated or new stock entry
+          await stock.save();
+        }
+        
+        // Fetch and populate referenced documents for whareid and custid
+        const populatedBillSale = await billWasteModel.findById(savedBillSale._id).populate('whareid');
+    
+        return {
+          ...populatedBillSale._doc,
+          createdAt: populatedBillSale.createdAt.toISOString(),
+        };
+      } catch (error) {
+        throw new Error(`Error creating bill sale: ${error.message}`);
+      }
+    }, 
     createBillSale: async (_, { CreateBillSale }, context) => {
       const { userId, sellerId } = context;
       if (!userId) {
@@ -4442,7 +4729,7 @@ const resolvers = {
     addKitchen: async (_, { addNewKitchen }, context) => {
       try {
         const { userId, sellerId } = context;
-        const { name, description } = addNewKitchen;
+        const { name, description, categoryIds } = addNewKitchen;
 
         if (!userId) {
           throw new Error("You must be logged in");
@@ -4453,17 +4740,23 @@ const resolvers = {
         }
 
         const lowerCaseName = name.toLowerCase();
-        const existingKitchen = await kitchenModel.findOne({ name: { $regex: new RegExp('^' + lowerCaseName + '$', 'i') }, sellerid: sellerId });
+        const existingKitchen = await kitchenModel.findOne({
+          name: { $regex: new RegExp('^' + lowerCaseName + '$', 'i') },
+          sellerid: sellerId
+        });
 
         if (existingKitchen) {
           throw new Error('Kitchen with the same name already exists for this seller.');
         }
+
+        const uniqueCategoryIds = [...new Set(categoryIds)]; // Ensure unique category IDs
 
         const newKitchen = new kitchenModel({
           name: lowerCaseName,
           description,
           userid: userId,
           sellerid: sellerId,
+          categoryIds: uniqueCategoryIds // Include unique category IDs
         });
 
         const savedKitchen = await newKitchen.save();
@@ -4477,34 +4770,40 @@ const resolvers = {
         throw new Error(`Error adding kitchen: ${error.message}`);
       }
     },
-    updateKitchen: async (_, { id,input }, context) => {
+    updateKitchen: async (_, { id, input }, context) => {
       try {
         const { userId, sellerId } = context;
         if (!userId) {
           throw new Error("You must be logged in");
         }
-        const { name, description } = input;
+    
+        const { name, description, categoryIds } = input;
+    
+        // Check if kitchen name is being updated and whether it already exists
         const lowerCaseName = name ? name.toLowerCase() : null;
         const existingKitchen = lowerCaseName ? await kitchenModel.findOne({ name: { $regex: new RegExp('^' + lowerCaseName + '$', 'i') }, sellerid: sellerId }) : null;
-
+    
         if (existingKitchen && existingKitchen._id.toString() !== id) {
           throw new Error('Kitchen with the updated name already exists for this seller.');
         }
-
+    
+        // Prepare fields to update
         const updateFields = {};
         if (lowerCaseName) updateFields.name = lowerCaseName;
         if (description) updateFields.description = description;
-
+        if (categoryIds) updateFields.categoryIds = categoryIds;  // Update categories
+    
+        // Perform the update
         const updatedKitchen = await kitchenModel.findByIdAndUpdate(
           id,
           updateFields,
           { new: true }
         );
-
+    
         if (!updatedKitchen) {
           throw new Error("Kitchen not found");
         }
-
+    
         return updatedKitchen;
       } catch (error) {
         console.error("Error updating kitchen:", error);
@@ -4949,7 +5248,240 @@ const resolvers = {
         throw new Error(`Error deleting chef: ${error.message}`);
       }
     },
+    // Function to create production item
+    createProductionItem : async (_, { input }, context) => {
+  try {
+    const { userId, sellerId } = context;
+    const { productId, rawMaterialsUsed, formulaName } = input;
 
+    if (!userId) {
+      throw new Error("You must be logged in");
+    }
+
+    if (!productId) {
+      throw new Error("Product ID is required");
+    }
+
+    if (!rawMaterialsUsed || rawMaterialsUsed.length === 0) {
+      throw new Error("At least one raw material is required");
+    }
+
+    // Check if a production entry with the same productId already exists for the given sellerId
+    const existingProduction = await productionListModel.findOne({ productId });
+    if (existingProduction) {
+      throw new Error('Production with the same Product ID already exists.');
+    }
+
+    const newProduction = new productionListModel({
+      productId,
+      rawMaterialsUsed,
+      formulaName,
+      userid: userId,
+      sellerid: sellerId,
+    });
+
+    // Save the new production
+    const savedProduction = await newProduction.save();
+
+    // Populate the fields after saving
+    const populatedProduction = await productionListModel
+      .findById(savedProduction._id)
+      .populate('productId', '_id productname')
+      .populate({
+        path: 'rawMaterialsUsed.rawId',
+        select: '_id productname',
+      });
+
+    return {
+      ...populatedProduction._doc,
+      createdAt: populatedProduction.createdAt.toISOString(),
+    };
+  } catch (error) {
+    console.error("Error adding production:", error);
+    throw new Error(`Error adding production: ${error.message}`);
+  }
+    },
+    deleteproductionList: async (_, args, context) => {
+      const { userId, role } = context;
+      if (!userId) {
+        throw new Error("You must be logged in");
+      }
+     //console.log(role);
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete categories. Please contact an admin.");
+      }
+      // Count the number of items associated with the unit ID
+      const itemCount = await billSaleModel.countDocuments();
+
+      if (itemCount > 0) {
+        throw new Error("Cannot delete items as it is referenced in Sale");
+      }
+      await productionListModel.findByIdAndDelete(args.id);
+      return "Items Delte successfully"
+    },
+    createProductionDo: async (_, { input }, context) => {
+      try {
+        const { userId, sellerId } = context;
+        const { prodcart, whareid, formulaName } = input;
+    
+        if (!userId) {
+          throw new Error("You must be logged in");
+        }
+    
+        // Create new production entry
+        const newProduction = new productionModel({
+          prodcart,
+          whareid,
+          formulaName,
+          userid: userId,
+          sellerid: sellerId,
+        });
+    
+        // Save the new production entry
+        const savedProduction = await newProduction.save();
+    
+        // Populate productId within each prodCart
+        const populatedProduction = await productionModel
+          .findById(savedProduction._id)
+          .populate({
+            path: 'prodcart.productId',
+            select: '_id productname',
+          })
+          .exec();
+    
+        // Loop through each prodcart item
+        for (const item of prodcart) {
+          const { productId, qty } = item;
+    
+          // Find or create stock entry for the product
+          let stock = await stockModel.findOne({ productId, warehouseId: whareid });
+    
+          if (!stock) {
+            stock = new stockModel({ productId, warehouseId: whareid, quantity: qty, sellerid: sellerId });
+          } else {
+            stock.quantity += qty;
+          }
+    
+          // Save stock changes
+          await stock.save();
+    
+          // Fetch product data to calculate total cost
+          const productData = await productionListModel
+            .findOne({ productId })
+            .populate('productId', '_id productname')
+            .populate({
+              path: 'rawMaterialsUsed.rawId',
+              select: '_id productname cost',
+            });
+    
+          if (!productData) {
+            throw new Error(`Product with ID ${productId} not found`);
+          }
+    
+          // Calculate total cost
+          let totalCost = 0;
+          for (const material of productData.rawMaterialsUsed) {
+            totalCost += material.rawId.cost * material.qtyUsed;
+          }
+          totalCost = parseFloat(totalCost.toFixed(2)); // Ensure totalCost is a number with two decimal places
+    
+          // Update cost in itemsModel (do not increment)
+          await itemsModel.findByIdAndUpdate(productId, { cost: totalCost });
+    
+          // Loop through raw materials and update stock
+          for (const material of productData.rawMaterialsUsed) {
+            const { rawId, qtyUsed } = material;
+    
+            // Find stock entry for each raw material
+            let rawMaterialStock = await stockModel.findOne({ productId: rawId, warehouseId: whareid });
+    
+            if (!rawMaterialStock) {
+              // If no stock entry exists, create a new one
+              rawMaterialStock = new stockModel({ productId: rawId, warehouseId: whareid, quantity: -qtyUsed * qty, sellerid: sellerId });
+            } else {
+              // If stock entry exists, update the quantity
+              rawMaterialStock.quantity -= qtyUsed * qty;
+            }
+    
+            // Save stock changes
+            await rawMaterialStock.save();
+          }
+        }
+    
+        return {
+          ...populatedProduction._doc,
+          createdAt: savedProduction.createdAt.toISOString(),
+        };
+      } catch (error) {
+        console.error("Error adding production:", error);
+        throw new Error(`Error adding production: ${error.message}`);
+      }
+    },    
+    deleteproductionDo: async (_, args, context) => {
+      const { userId, role } = context;
+      if (!userId) {
+        throw new Error("You must be logged in");
+      }
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete categories. Please contact an admin.");
+      }
+    
+      // Find the production entry to delete
+      const productionToDelete = await productionModel.findById(args.id).populate({
+        path: 'prodcart.productId',
+        select: '_id productname'
+      });
+    
+      if (!productionToDelete) {
+        throw new Error("Production entry not found");
+      }
+    
+      // Loop through each prodcart item to update stock quantities
+      for (const item of productionToDelete.prodcart) {
+        const { productId, qty } = item;
+        let stock = await stockModel.findOne({ productId, warehouseId: productionToDelete.whareid });
+    
+        if (stock) {
+          // Decrease the quantity of the finished product
+          stock.quantity -= qty;
+    
+          // Save stock changes
+          await stock.save();
+    
+          // Fetch product data to update raw materials stock
+          const productData = await productionListModel
+            .findOne({ productId })
+            .populate('productId', '_id productname')
+            .populate({
+              path: 'rawMaterialsUsed.rawId',
+              select: '_id productname cost',
+            });
+    
+          if (productData) {
+            // Loop through stock and update quantity for raw materials
+            for (const material of productData.rawMaterialsUsed) {
+              const { rawId, qtyUsed } = material;
+    
+              // Find stock entry for each raw material
+              let rawMaterialStock = await stockModel.findOne({ productId: rawId, warehouseId: productionToDelete.whareid });
+    
+              if (rawMaterialStock) {
+                // Increase the quantity of raw materials
+                rawMaterialStock.quantity += qtyUsed;
+    
+                // Save stock changes
+                await rawMaterialStock.save();
+              }
+            }
+          }
+        }
+      }
+    
+      // Delete the production entry
+      await productionModel.findByIdAndDelete(args.id);
+    
+      return "Production entry deleted successfully";
+    },
   },
 
 };
