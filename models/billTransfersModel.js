@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const billTransfersSchema = mongoose.Schema({
   billdate: { type: Date, required: true },
-  transid: { type: Number, required: true },
+  transid: { type: Number,  unique: true },
   whareid: { type: mongoose.Schema.Types.ObjectId, ref: 'warehouseModel', required: true },
   custid: { type: mongoose.Schema.Types.ObjectId, ref: 'warehouseModel', required: true },
   discount: { type: Number, default: 0 },

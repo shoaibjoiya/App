@@ -53,21 +53,25 @@ const typeDefs = `
     getProductionDoBills(search: String, page: Int, rows: Int): ProductionDoBillPagination
 
     ReportgetsaleBills(warehouseId: ID,customerId: ID,userIds: ID,paymentStatus: String,startDate: String!,endDate: String!,page: Int): SaleBillReport!
-    ReportTodaySalesBetween(startDate: String!,endDate: String! ): Float!
+    ReportTodaySalesBetween(warehouseId: ID,customerId: ID,userIds: ID,paymentStatus: String,startDate: String!,endDate: String!): Float!
     ReportTotalPendingCash: Float!
     ReportTotalSales: Float!
-   ReportTotalSalesUser(startDate: String!, endDate: String!): Float
+    ReportTotalSalesUser(startDate: String!, endDate: String!): Float
     ReportTodaySales: Float!
     ReportPreviousDaySales: Float!
-    ReportgetsalereturnBills(warehouseId:ID,customerId:ID,userIds:ID,paymentStatus:String, startDate: String, endDate: String, page: Int): SaleReturnBillReport!
+    ReportgetsalereturnBills(warehouseId:ID,customerId:ID,userIds:ID,paymentStatus:String, startDate: String!, endDate: String!, page: Int): SaleReturnBillReport!
+    ReportTodaySalesreturnBetween(warehouseId: ID,customerId: ID,userIds: ID,paymentStatus: String,startDate: String!,endDate: String!): Float!
     ReportTotalPendingsalereturnCash: Float!
     ReportTotalsalereturn: Float!
+    dailyProfit(startDate: String!): Float!
 
-    ReportgetsalePurchaseBills(warehouseId:ID,customerId:ID,userIds:ID,paymentStatus:String, startDate: String, endDate: String, page: Int): SaleBillPurchaseReport!
+    ReportgetsalePurchaseBills(warehouseId:ID,customerId:ID,userIds:ID,paymentStatus:String, startDate: String!, endDate: String!, page: Int): SaleBillPurchaseReport!
     ReportTotalPendingPurchaseCash: Float!
+    ReportTodayPurBetween(warehouseId: ID,customerId: ID,userIds: ID,paymentStatus: String,startDate: String!,endDate: String!): Float!
     ReportTotalPurchase: Float!
 
-    ReportgetPurchasereturnBills(warehouseId:ID,customerId:ID,userIds:ID,paymentStatus:String, startDate: String, endDate: String, page: Int): PurchasereturnBills!
+    ReportgetPurchasereturnBills(warehouseId:ID,customerId:ID,userIds:ID,paymentStatus:String, startDate: String!, endDate: String!, page: Int): PurchasereturnBills!
+    ReportTodayPurreturnBetween(warehouseId: ID,customerId: ID,userIds: ID,paymentStatus: String,startDate: String!,endDate: String!): Float!
     ReportTotalPendingpurchasereturnCash: Float!
     ReportTotalPurchasereturn: Float!
 
@@ -78,9 +82,26 @@ const typeDefs = `
     LedgerotalPurchasereturnpay(warehouseId: ID!, customerId: ID!): Float
     LedgerToatalSalpay(warehouseId: ID, customerId: ID): Float
     Ledgerotalsalereturnpay(warehouseId: ID, customerId: ID): Float
-    getSaleBills:  BillSaleWithName
-
+    
+ ReportTotalDiscount: Float
+ ReportTotalDiscountCart: Float
+    getSumByWarehouse(warehouseId: ID): WarehouseSummary!
+    searchSales(criteria: SalesSearchCriteria): [BillSaleWithName]
 }
+    
+type WarehouseSummary {
+  totalCost: Float!
+  totalRetail: Float!
+}
+ input SalesSearchCriteria {
+    cateid: ID
+    whareid: ID
+    custid: ID
+    productid: ID
+    userid: ID
+    startDate: String
+    endDate: String
+  }
 
 # Define the input type for adding new tables
 input AddNewTableInput {
@@ -145,6 +166,8 @@ type GetKitchensResponse {
 type StockData {
   stockItems: [Stock]
   totalCount: Int
+  totalCost: Float
+  totalRetail: Float
 }
 type Stock {
   productId: ItemWithName
@@ -416,27 +439,9 @@ type Kitchen {
     createdAt: String!
   }
 
-  type BillSale {
-    _id: ID!
-    billdate: Date
-    whareid: String
-    custid: String
-    discount: Float
-    saletax: Float
-    shippingcharges: Float
-    totalamount: Float
-    cashreceived: Float
-    billstatus: String
-    paymentstatus: String
-    paymentMode: String
-    notes: String
-    salecart: [SaleCartItem]
-    createdAt: Date
-    updatedAt: Date
-  }
   type BillSaleWithName {
     _id: ID
-    saleid:String
+    saleid:Int
     billdate: Date
     whareid: Warehouse
     custid: PartyEntry
@@ -470,7 +475,7 @@ type Kitchen {
   
    type BillWasteWithName {
     _id: ID!
-    saleid:String
+    wasteid:Int
     billdate: Date
     whareid: Warehouse
     custid: String
@@ -1227,34 +1232,37 @@ input CreateTaskInput {
   }
 
   input CreateBillSaleInput {
-    billdate: Date!
-    whareid: String!
-    custid: String!
-    discount: Float
-    saletax: Float
-    shippingcharges: Float
-    cashreceived:Float
-    receivedamount:Float
-    totalamount: Float
-    billstatus: String
-    paymentstatus: String
-    paymentMode: String
-    notes: String
-    customerName: String
-    mobileNumber: String
-    deliveryAddress: String
-    invoiceNumberfbr: String
-    riderName: String
-    riderid: String
-    waiterName: String
-    waiterid: String
-    tableName: String
-    tabileid: String
-    chefid: String
-    orderType: String
-    kitchenid: String
-    salecart: [SaleCartItemInput]
-  }
+  billdate: String!
+  whareid: ID!
+  custid: ID!
+  discount: Float
+  saletax: Float
+  shippingcharges: Float
+  totalamount: Float
+  billstatus: String
+  paymentstatus: String
+  paymentMode: String
+  cashreceived: Float
+  receivedamount: Float
+  notes: String
+  invoiceNumberfbr: String
+  salecart: [SaleCartItemInput!]!
+  customerName: String
+  mobileNumber: String
+  deliveryAddress: String
+  riderName: String
+  riderid: String
+  waiterName: String
+  waiterid: String
+  tableName: String
+  tabileid: String
+  chefid: String
+  orderType: String
+  kitchenid: ID
+
+}
+
+
     
   input CreateBillWasteInput {
     billdate: Date!

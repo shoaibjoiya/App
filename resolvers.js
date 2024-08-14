@@ -569,7 +569,7 @@ const resolvers = {
         return {
           saleBills: saleBills.map((saleBill) => ({
             ...saleBill._doc,
-            createdAt: saleBill.createdAt.toISOString(),
+           
           })),
           saleBillCount: saleBillCount,
         };
@@ -1471,40 +1471,90 @@ const resolvers = {
             throw new Error('Error fetching bills: ' + error.message);
           }
     },
-    ReportTodaySalesBetween: async (_, { startDate, endDate }, context) => {
-          try {
-            const { sellerId } = context;
+    // ReportTodaySalesBetween: async (_, { warehouseId, customerId, userIds, paymentStatus,startDate, endDate }, context) => {
+    //       try {
+    //         const { sellerId } = context;
             
-            const startOfDay = new Date(startDate);
-            startOfDay.setUTCHours(0, 0, 0, 0); 
+    //         const startOfDay = new Date(startDate);
+    //         startOfDay.setUTCHours(0, 0, 0, 0); 
     
-            const endOfDay = new Date(endDate);
-            endOfDay.setUTCHours(23, 59, 59, 999); 
+    //         const endOfDay = new Date(endDate);
+    //         endOfDay.setUTCHours(23, 59, 59, 999); 
             
-            const salesBetweenDates = await billSaleModel.aggregate([
-              {
-                $match: {
-                  sellerid: new mongoose.Types.ObjectId(sellerId),
-                  billdate: {
-                    $gte: startOfDay, 
-                    $lte: endOfDay 
-                  }
-                }
-              },
-              {
-                $group: {
-                  _id: null,
-                  totalSales: { $sum: "$totalamount" }
-                }
-              }
-            ]);
+    //         const salesBetweenDates = await billSaleModel.aggregate([
+    //           {
+    //             $match: {
+    //               sellerid: new mongoose.Types.ObjectId(sellerId),
+    //               billdate: {
+    //                 $gte: startOfDay, 
+    //                 $lte: endOfDay 
+    //               }
+    //             }
+    //           },
+    //           {
+    //             $group: {
+    //               _id: null,
+    //               totalSales: { $sum: "$totalamount" }
+    //             }
+    //           }
+    //         ]);
             
-            return salesBetweenDates.length > 0 ? salesBetweenDates[0].totalSales : 0; 
-          } catch (error) {
-            console.error('Error:', error);
-            return null;
+    //         return salesBetweenDates.length > 0 ? salesBetweenDates[0].totalSales : 0; 
+    //       } catch (error) {
+    //         console.error('Error:', error);
+    //         return null;
+    //       }
+    // },   
+    ReportTodaySalesBetween: async (_, { warehouseId, customerId, userIds, paymentStatus, startDate, endDate }, context) => {
+      const { sellerId } = context;
+    
+      try {
+        if (!sellerId) {
+          throw new Error('You must be logged in with a valid seller ID.');
+        }
+    
+        // Convert startDate and endDate to Date objects
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+    
+        let query = { 
+          sellerid: new mongoose.Types.ObjectId(sellerId), 
+          billdate: { $gte: start, $lte: end }
+        };
+    
+        if (customerId) {
+          query.custid = new mongoose.Types.ObjectId(customerId);
+        }
+        if (warehouseId) {
+          query.whareid = new mongoose.Types.ObjectId(warehouseId);
+        }
+        if (userIds) {
+          query.userid = new mongoose.Types.ObjectId(userIds);
+        }
+        if (paymentStatus) {
+          query.paymentstatus = paymentStatus;
+        }
+    
+        // Aggregate to get total sales
+        const salesBetweenDates = await billSaleModel.aggregate([
+          {
+            $match: query
+          },
+          {
+            $group: {
+              _id: null,
+              totalSales: { $sum: "$totalamount" }
+            }
           }
-    },   
+        ]);
+    
+        return salesBetweenDates.length > 0 ? salesBetweenDates[0].totalSales : 0;
+    
+      } catch (error) {
+        console.error('Error fetching sales:', error);
+        throw new Error('Error fetching sales: ' + error.message);
+      }
+    },    
     ReportTotalPendingCash: async (_, __, context) => {
       try {
         const { sellerId } = context;
@@ -1708,6 +1758,56 @@ const resolvers = {
         throw new Error('Error fetching bills: ' + error.message);
       }
     },
+    ReportTodaySalesreturnBetween: async (_, { warehouseId, customerId, userIds, paymentStatus, startDate, endDate }, context) => {
+      const { sellerId } = context;
+    
+      try {
+        if (!sellerId) {
+          throw new Error('You must be logged in with a valid seller ID.');
+        }
+    
+        // Convert startDate and endDate to Date objects
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+    
+        let query = { 
+          sellerid: new mongoose.Types.ObjectId(sellerId), 
+          billdate: { $gte: start, $lte: end }
+        };
+    
+        if (customerId) {
+          query.custid = new mongoose.Types.ObjectId(customerId);
+        }
+        if (warehouseId) {
+          query.whareid = new mongoose.Types.ObjectId(warehouseId);
+        }
+        if (userIds) {
+          query.userid = new mongoose.Types.ObjectId(userIds);
+        }
+        if (paymentStatus) {
+          query.paymentstatus = paymentStatus;
+        }
+    
+        // Aggregate to get total sales
+        const salesBetweenDates = await billSaleReturnModel.aggregate([
+          {
+            $match: query
+          },
+          {
+            $group: {
+              _id: null,
+              totalSales: { $sum: "$totalamount" }
+            }
+          }
+        ]);
+    
+        return salesBetweenDates.length > 0 ? salesBetweenDates[0].totalSales : 0;
+    
+      } catch (error) {
+        console.error('Error fetching sales:', error);
+        throw new Error('Error fetching sales: ' + error.message);
+      }
+    }, 
     ReportTotalPendingsalereturnCash: async (_, __, context) => {
       try {
         const { sellerId } = context;
@@ -1769,7 +1869,48 @@ const resolvers = {
         return null;
       }
     },
-
+    dailyProfit: async (_, { startDate }, context) => {
+      const start = new Date(startDate);
+      const end = new Date(startDate);
+      end.setDate(end.getDate() + 1);
+    
+      try {
+        const sales = await billSaleModel.aggregate([
+          { $match: { billdate: { $gte: start, $lt: end } } },
+          { $unwind: '$salecart' },
+          {
+            $lookup: {
+              from: 'itemsmodels',  // Make sure this is the correct collection name
+              localField: 'salecart.id',
+              foreignField: '_id',
+              as: 'itemDetails',
+            },
+          },
+          { $unwind: '$itemDetails' },
+          {
+            $group: {
+              _id: null,
+              totalProfit: {
+                $sum: {
+                  $subtract: [
+                    { $multiply: ['$salecart.price', '$salecart.quantity'] },
+                    { $multiply: ['$itemDetails.cost', '$salecart.quantity'] },
+                  ],
+                },
+              },
+            },
+          },
+        ]);
+    
+        // Directly return the float value
+        return sales.length > 0 ? sales[0].totalProfit : 0;
+      } catch (error) {
+        console.error('Error calculating daily profit:', error);
+        throw new Error('Unable to calculate daily profit');
+      }
+    },
+    
+    
     //purchase reports
     ReportgetsalePurchaseBills: async (_, { warehouseId, customerId, userIds, paymentStatus, startDate, endDate, page }, context) => {
       const { userId, sellerId } = context;
@@ -1816,6 +1957,56 @@ const resolvers = {
         throw new Error('Error fetching bills: ' + error.message);
       }
     },
+    ReportTodayPurBetween: async (_, { warehouseId, customerId, userIds, paymentStatus, startDate, endDate }, context) => {
+      const { sellerId } = context;
+    
+      try {
+        if (!sellerId) {
+          throw new Error('You must be logged in with a valid seller ID.');
+        }
+    
+        // Convert startDate and endDate to Date objects
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+    
+        let query = { 
+          sellerid: new mongoose.Types.ObjectId(sellerId), 
+          billdate: { $gte: start, $lte: end }
+        };
+    
+        if (customerId) {
+          query.custid = new mongoose.Types.ObjectId(customerId);
+        }
+        if (warehouseId) {
+          query.whareid = new mongoose.Types.ObjectId(warehouseId);
+        }
+        if (userIds) {
+          query.userid = new mongoose.Types.ObjectId(userIds);
+        }
+        if (paymentStatus) {
+          query.paymentstatus = paymentStatus;
+        }
+    
+        // Aggregate to get total sales
+        const salesBetweenDates = await billPurchaseModel.aggregate([
+          {
+            $match: query
+          },
+          {
+            $group: {
+              _id: null,
+              totalSales: { $sum: "$totalamount" }
+            }
+          }
+        ]);
+    
+        return salesBetweenDates.length > 0 ? salesBetweenDates[0].totalSales : 0;
+    
+      } catch (error) {
+        console.error('Error fetching sales:', error);
+        throw new Error('Error fetching sales: ' + error.message);
+      }
+    }, 
     ReportTotalPendingPurchaseCash: async (_, __, context) => {
       try {
         const { sellerId } = context;
@@ -1923,6 +2114,56 @@ const resolvers = {
         throw new Error('Error fetching bills: ' + error.message);
       }
     },
+    ReportTodayPurreturnBetween: async (_, { warehouseId, customerId, userIds, paymentStatus, startDate, endDate }, context) => {
+      const { sellerId } = context;
+    
+      try {
+        if (!sellerId) {
+          throw new Error('You must be logged in with a valid seller ID.');
+        }
+    
+        // Convert startDate and endDate to Date objects
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+    
+        let query = { 
+          sellerid: new mongoose.Types.ObjectId(sellerId), 
+          billdate: { $gte: start, $lte: end }
+        };
+    
+        if (customerId) {
+          query.custid = new mongoose.Types.ObjectId(customerId);
+        }
+        if (warehouseId) {
+          query.whareid = new mongoose.Types.ObjectId(warehouseId);
+        }
+        if (userIds) {
+          query.userid = new mongoose.Types.ObjectId(userIds);
+        }
+        if (paymentStatus) {
+          query.paymentstatus = paymentStatus;
+        }
+    
+        // Aggregate to get total sales
+        const salesBetweenDates = await billPurchaseReturnModel.aggregate([
+          {
+            $match: query
+          },
+          {
+            $group: {
+              _id: null,
+              totalSales: { $sum: "$totalamount" }
+            }
+          }
+        ]);
+    
+        return salesBetweenDates.length > 0 ? salesBetweenDates[0].totalSales : 0;
+    
+      } catch (error) {
+        console.error('Error fetching sales:', error);
+        throw new Error('Error fetching sales: ' + error.message);
+      }
+    }, 
     ReportTotalPendingpurchasereturnCash: async (_, __, context) => {
       try {
         const { sellerId } = context;
@@ -2255,7 +2496,161 @@ const resolvers = {
       }
 
     },
-   
+    searchSales: async (_, { criteria }) => {
+      const query = {};
+
+      if (criteria.cateid) {
+        const items = await itemsModel.find({ cateid: criteria.cateid }).select('_id');
+        query['salecart.id'] = { $in: items.map(item => item._id) };
+      }
+
+      if (criteria.whareid) {
+        query.whareid = criteria.whareid;
+      }
+
+      if (criteria.custid) {
+        query.custid = criteria.custid;
+      }
+
+      if (criteria.productid) {
+        query['salecart.id'] = criteria.productid;
+      }
+
+      if (criteria.userid) {
+        query.userid = criteria.userid;
+      }
+
+      if (criteria.startDate && criteria.endDate) {
+        query.billdate = {
+          $gte: new Date(criteria.startDate),
+          $lte: new Date(criteria.endDate)
+        };
+      } else if (criteria.startDate) {
+        query.billdate = { $gte: new Date(criteria.startDate) };
+      } else if (criteria.endDate) {
+        query.billdate = { $lte: new Date(criteria.endDate) };
+      }
+
+      try {
+        const sales = await billSaleModel.find(query).populate('whareid custid userid salecart.id');
+        return sales;
+      } catch (error) {
+        console.error('Error fetching sales:', error);
+        throw new Error('Error fetching sales');
+      }
+    },
+    getSumByWarehouse: async (_, { warehouseId}, context) => {
+      try {
+       // console.log('Warehouse ID:', warehouseId);
+       // const documents = await stockModel.find({ warehouseId: new mongoose.Types.ObjectId(warehouseId) });
+        //console.log('Documents found:', documents);
+        
+        const result = await stockModel.aggregate([
+          { $match: { warehouseId: new mongoose.Types.ObjectId(warehouseId) } }, // Match documents by warehouseId
+          {
+            $lookup: {
+              from: 'itemsmodels', // The collection name for itemsModel
+              localField: 'productId',
+              foreignField: '_id',
+              as: 'productDetails'
+            }
+          },
+          { $unwind: '$productDetails' },
+          {
+            $addFields: {
+              cost: { $toDouble: '$productDetails.cost' }, // Convert cost to number
+              price: { $toDouble: '$productDetails.price' }  // Convert price to number
+            }
+          },
+          {
+            $group: {
+              _id: '$warehouseId', // Group by warehouseId
+              totalCost: { $sum: { $multiply: ['$cost', '$quantity'] } }, // Calculate total cost
+              totalRetail: { $sum: { $multiply: ['$price', '$quantity'] } } // Calculate total retail
+            }
+          }
+        ]);
+    
+       // console.log('Aggregation Result:', result); // Log the result for debugging
+    
+        if (result.length > 0) {
+          return {
+            totalCost: result[0].totalCost,
+            totalRetail: result[0].totalRetail
+          };
+        } else {
+          return {
+            totalCost: 0,
+            totalRetail: 0
+          };
+        }
+      } catch (error) {
+        console.error('Error calculating total values:', error);
+        throw new Error('Failed to calculate total values');
+      }
+    },
+    ReportTotalDiscount: async (_, __, context) => {
+      try {
+        const { sellerId } = context;
+    console.log('Warehouse ID:', sellerId);
+        // Aggregate the total discount across all bill sales for a given seller
+        const totalDiscounts = await billSaleModel.aggregate([
+          {
+            $match: { sellerid: new mongoose.Types.ObjectId(sellerId) } // Filter by sellerId
+          },
+          {
+            $group: {
+              _id: '$sellerid', // Group by sellerId
+              totalDiscount: { $sum: '$discount' } // Sum the discount field
+            }
+          }
+        ]);
+    
+        if (totalDiscounts.length === 0) {
+          // No discounts found for the seller
+          return 0;
+        }
+    
+        // Return the total discount
+        return totalDiscounts[0].totalDiscount;
+      } catch (error) {
+        console.error('Error calculating total discounts:', error);
+        return null;
+      }
+    },
+    ReportTotalDiscountCart: async (_, __, context) => {
+      try {
+        const { sellerId } = context;
+    
+        // Aggregate discounts across all bill sales for a given seller
+        const totalDiscounts = await billSaleModel.aggregate([
+          {
+            $match: { sellerid: new mongoose.Types.ObjectId(sellerId) } // Filter by sellerId
+          },
+          {
+            $unwind: '$salecart' // Unwind the salecart array
+          },
+          {
+            $group: {
+              _id: '$sellerid', // Group by sellerId
+              totalDiscount: { $sum: { $multiply: ['$salecart.discount', '$salecart.quantity'] } } // Calculate total discount
+            }
+          }
+        ]);
+    
+        if (totalDiscounts.length === 0) {
+          // No discounts found for the seller
+          return 0;
+        }
+    
+        // Return the total discount
+        return totalDiscounts[0].totalDiscount;
+      } catch (error) {
+        console.error('Error calculating total discounts:', error);
+        return null;
+      }
+    },
+    
   },
   Mutation: 
   {
@@ -3120,15 +3515,13 @@ const resolvers = {
         throw new Error("billdate, whareid, custid are required fields");
       }
     
-      // Find the maximum saleid in the database
-      const maxItem = await billWasteModel.findOne({}, { wasteid: 1 }).sort({ 'wasteid': -1 });
-      let newCode = maxItem && maxItem.wasteid ? parseInt(maxItem.wasteid) + 1 : 1;
+     
       
       try {
         // Create a new bill sale instance
         const newBillSale = new billWasteModel({
           billdate,
-          wasteid: newCode,
+
           whareid,  // Assuming whareid is a valid ID
           custid,   // Assuming custid is a valid ID
           discount,
@@ -3215,14 +3608,13 @@ const resolvers = {
       }
     
       // Find the maximum saleid in the database
-      const maxItem = await billSaleModel.findOne({}, { saleid: 1 }).sort({ 'saleid': -1 });
-      let newCode = maxItem && maxItem.saleid ? parseInt(maxItem.saleid) + 1 : 1;
+      //const maxItem = await billSaleModel.findOne({}, { saleid: 1 }).sort({ 'saleid': -1 });
+      //let newCode = maxItem && maxItem.saleid ? parseInt(maxItem.saleid) + 1 : 1;
       
       try {
         // Create a new bill sale instance
         const newBillSale = new billSaleModel({
           billdate,
-          saleid: newCode,
           whareid,  // Assuming whareid is a valid ID
           custid,   // Assuming custid is a valid ID
           discount,
@@ -3446,15 +3838,13 @@ const resolvers = {
       if (!billdate || !whareid || !custid) {
         throw new Error("billdate, whareid, and custid are required fields");
       }
-      //const maxItem = await billSaleModel.findOne({}, { code: 1 }, { sort: { 'code': -1 } });
-      const maxItem = await billSaleReturnModel.findOne({}, { saleretid: 1 }).sort({ 'saleretid': -1 });
-      let newCode = maxItem && maxItem.saleretid ? parseInt(maxItem.saleretid) + 1 : 1;
+      
       
       try {
         // Create a new bill sale model instance
         const newBillSale = new billSaleReturnModel({
           billdate,
-          saleretid: newCode,
+
           whareid: whareid, // Assuming whareid is a valid ID
           custid: custid,   // Assuming custid is a valid ID
           discount,
@@ -3658,12 +4048,11 @@ const resolvers = {
           throw new Error("billdate, whareid, and custid are required fields");
         }
 
-        const maxItem = await billPurchaseModel.findOne({}, { purid: 1 }).sort({ 'purid': -1 });
-        let newCode = maxItem && maxItem.purid ? parseInt(maxItem.purid) + 1 : 1;
+      
 
         const newBillPurchase = new billPurchaseModel({
           billdate,
-          purid: newCode,
+       
           whareid,
           custid,
           discount,
@@ -3887,14 +4276,12 @@ const resolvers = {
       if (!billdate || !whareid || !custid) {
         throw new Error("billdate, whareid, and custid are required fields");
       }
-      const maxItem = await billPurchaseReturnModel.findOne({}, { purretid: 1 }).sort({ 'purretid': -1 });
-      let newCode = maxItem && maxItem.purretid ? parseInt(maxItem.purretid) + 1 : 1;
      
    
       try {
         const newBillPurchasereturn = new billPurchaseReturnModel({
           billdate,
-          purretid: newCode,
+
           whareid: whareid,
           custid: custid,
           discount,
@@ -4093,14 +4480,13 @@ const resolvers = {
       if (!billdate || !whareid || !custid) {
         throw new Error("billdate, whareid, and custid are required fields");
       }
-      const maxItem = await billOrdersModel.findOne({}, { orderid: 1 }).sort({ 'orderid': -1 });
-      let newCode = maxItem && maxItem.orderid ? parseInt(maxItem.orderid) + 1 : 1;
+     
      
     
       try {
         const newBillQuotation = new billOrdersModel({
           billdate,
-          orderid: newCode,
+        
           whareid: whareid,
           custid: custid,
           discount,
@@ -4156,13 +4542,11 @@ const resolvers = {
       if (!billdate || !whareid || !custid) {
         throw new Error("billdate, whareid, and custid are required fields");
       }
-      const maxItem = await billTransfersModel.findOne({}, { transid: 1 }).sort({ 'transid': -1 });
-      let newCode = maxItem && maxItem.transid ? parseInt(maxItem.transid) + 1 : 1;
     
       try {
         const newBilltransfer = new billTransfersModel({
           billdate,
-          transid: newCode,
+         
           whareid: whareid,
           custid: custid,
           discount,
@@ -4281,14 +4665,12 @@ const resolvers = {
         }
 
         try {
-          // Find the maximum code in the database
-          const maxItem = await billAdjustmentsModel.findOne({}, { adujstid: 1 }).sort({ 'adujstid': -1 });
-          let newCode = maxItem && maxItem.adujstid ? parseInt(maxItem.adujstid) + 1 : 1;
+       
     
           // Create a new bill adjustment
           const newBillAdjustment = new billAdjustmentsModel({
             billdate,
-            adujstid: newCode,
+         
             whareid,
             custid,
             discount,
