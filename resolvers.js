@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import './models/TaskModel.js'
 import './models/userModel.js'
 import './models/categoryModel.js'
@@ -30,6 +30,7 @@ import './models/tableModel.js';
 import billWasteModel from './models/billWasteModel.js';
 import productionListModel from './models/productionListModel.js';
 import productionModel from './models/productionModel.js';
+import expenseEntryModel from './models/expenseEntryModel.js';
 
 
 
@@ -2650,7 +2651,92 @@ const resolvers = {
         return null;
       }
     },
-    
+    //charts 
+    getMonthlyData: async () => {
+      const currentYear = new Date().getFullYear();
+      
+      // Fetch Monthly Sales
+      const salesData = await billSaleModel.aggregate([
+        {
+          $match: {
+            billdate: {
+              $gte: new Date(`${currentYear}-01-01`),
+              $lt: new Date(`${currentYear + 1}-01-01`),
+            },
+          },
+        },
+        {
+          $group: {
+            _id: { $month: "$billdate" }, // Group by month
+            totalSales: { $sum: "$totalamount" }, // Sum the total sales
+          },
+        },
+        {
+          $sort: { "_id": 1 }, // Sort by month
+        },
+      ]);
+
+      // Fetch Monthly Purchases
+      const purchaseData = await billPurchaseModel.aggregate([
+        {
+          $match: {
+            billdate: {
+              $gte: new Date(`${currentYear}-01-01`),
+              $lt: new Date(`${currentYear + 1}-01-01`),
+            },
+          },
+        },
+        {
+          $group: {
+            _id: { $month: "$billdate" }, // Group by month
+            totalPurchases: { $sum: "$totalamount" }, // Sum the total purchases
+          },
+        },
+        {
+          $sort: { "_id": 1 }, // Sort by month
+        },
+      ]);
+
+      // Fetch Monthly Expenses
+      const expenseData = await expenseEntryModel.aggregate([
+        {
+          $match: {
+            date: {
+              $gte: new Date(`${currentYear}-01-01`),
+              $lt: new Date(`${currentYear + 1}-01-01`),
+            },
+          },
+        },
+        {
+          $group: {
+            _id: { $month: "$date" }, // Group by month
+            totalExpenses: { $sum: "$amount" }, // Sum the total expenses
+          },
+        },
+        {
+          $sort: { "_id": 1 }, // Sort by month
+        },
+      ]);
+
+      // Combine the results into a single array of objects
+      const monthlyData = Array.from({ length: 12 }, (_, index) => {
+        const month = index + 1; // Months are 1-based
+        const sale = salesData.find((sale) => sale._id === month);
+        const purchase = purchaseData.find((purchase) => purchase._id === month);
+        const expense = expenseData.find((expense) => expense._id === month);
+
+        return {
+          month: format(new Date(currentYear, index), 'MMMM'), // Convert the month number to month name
+          totalSales: sale ? sale.totalSales : 0,
+          totalPurchases: purchase ? purchase.totalPurchases : 0,
+          totalExpenses: expense ? expense.totalExpenses : 0,
+        };
+      });
+
+      return monthlyData;
+    },
+
+
   },
   Mutation: 
   {

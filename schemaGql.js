@@ -87,8 +87,18 @@ const typeDefs = `
  ReportTotalDiscountCart: Float
     getSumByWarehouse(warehouseId: ID): WarehouseSummary!
     searchSales(criteria: SalesSearchCriteria): [BillSaleWithName]
+
+    getMonthlyData: [MonthlyData]
 }
-    
+   type MonthlyData {
+  month: String
+  totalSales: Float
+  totalPurchases: Float
+  totalExpenses: Float
+}
+
+
+ 
 type WarehouseSummary {
   totalCost: Float!
   totalRetail: Float!
