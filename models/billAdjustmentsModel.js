@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const billAdjustmentsSchema = mongoose.Schema({
   billdate: { type: Date, required: true },
-  adujstid: { type: Number ,  unique: true},
+  adujstid: { type: Number },
   whareid: { type: mongoose.Schema.Types.ObjectId, ref: 'warehouseModel', required: true },
   custid: { type: String },
   discount: { type: Number, default: 0 },

@@ -983,6 +983,8 @@ type Kitchen {
     deleteproductionList(id: ID!): String
     createProductionDo(input: ProductionDoInput!): ProductionDoItem
     deleteproductionDo(id: ID!): String
+    updateItemFields: String
+
  }
 
 type ProductionDoItem {

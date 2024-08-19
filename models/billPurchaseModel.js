@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const billPurchaseSchema = mongoose.Schema({
   billdate: { type: Date, required: true },
-  purid: { type: Number,  unique: true},
+  purid: { type: Number},
   whareid: { type: mongoose.Schema.Types.ObjectId, ref: 'warehouseModel', required: true },
   custid: { type: mongoose.Schema.Types.ObjectId, ref: 'partyEntryModel', required: true },
   discount: { type: Number, default: 0 },
@@ -11,7 +11,7 @@ const billPurchaseSchema = mongoose.Schema({
   totalamount: { type: Number, default: 0 },
   cashreceived: { type: Number, default: 0 },
   billstatus: { type: String, default: 'received' },
-  paymentstatus: { type: String, default: 'paid' },
+  paymentstatus: { type: String, default: 'paid' }, 
   paymentMode: { type: String, default: 'cash' }, 
   notes: { type: String },
   purchasecart: { type: Array, required: true },

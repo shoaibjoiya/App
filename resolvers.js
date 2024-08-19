@@ -1874,10 +1874,11 @@ const resolvers = {
       const start = new Date(startDate);
       const end = new Date(startDate);
       end.setDate(end.getDate() + 1);
-    
+      const { sellerId } = context;
       try {
         const sales = await billSaleModel.aggregate([
-          { $match: { billdate: { $gte: start, $lt: end } } },
+          { $match: 
+            { sellerid: new mongoose.Types.ObjectId(sellerId) ,billdate: { $gte: start, $lt: end } } },
           { $unwind: '$salecart' },
           {
             $lookup: {
@@ -1911,6 +1912,7 @@ const resolvers = {
       }
     },
     
+ 
     
     //purchase reports
     ReportgetsalePurchaseBills: async (_, { warehouseId, customerId, userIds, paymentStatus, startDate, endDate, page }, context) => {
@@ -2652,13 +2654,14 @@ const resolvers = {
       }
     },
     //charts 
-    getMonthlyData: async () => {
+    getMonthlyData: async (_, __, context) => {
       const currentYear = new Date().getFullYear();
-      
+      const { sellerId } = context;
       // Fetch Monthly Sales
       const salesData = await billSaleModel.aggregate([
         {
-          $match: {
+          $match: { 
+            sellerid: new mongoose.Types.ObjectId(sellerId) , // Filter by sellerId
             billdate: {
               $gte: new Date(`${currentYear}-01-01`),
               $lt: new Date(`${currentYear + 1}-01-01`),
@@ -2680,6 +2683,7 @@ const resolvers = {
       const purchaseData = await billPurchaseModel.aggregate([
         {
           $match: {
+            sellerid: new mongoose.Types.ObjectId(sellerId) , // Filter by sellerId
             billdate: {
               $gte: new Date(`${currentYear}-01-01`),
               $lt: new Date(`${currentYear + 1}-01-01`),
@@ -2701,6 +2705,7 @@ const resolvers = {
       const expenseData = await expenseEntryModel.aggregate([
         {
           $match: {
+            sellerid: new mongoose.Types.ObjectId(sellerId) , // Filter by sellerId
             date: {
               $gte: new Date(`${currentYear}-01-01`),
               $lt: new Date(`${currentYear + 1}-01-01`),
@@ -5949,6 +5954,45 @@ const resolvers = {
       await productionModel.findByIdAndDelete(args.id);
     
       return "Production entry deleted successfully";
+    },
+    updateItemFields: async () => {
+      try {
+        const result = await itemsModel.updateMany(
+          {
+            $or: [
+              { cost: { $type: "string" } },
+              { avgcost: { $type: "string" } },
+              { price: { $type: "string" } },
+              { wsprice: { $type: "string" } },
+              { discount: { $type: "string" } },
+              { alertqty: { $type: "string" } },
+              { tax: { $type: "string" } }
+            ]
+          },
+          [
+            {
+              $set: {
+                cost: { $toInt: "$cost" },
+                avgcost: { $toInt: "$avgcost" },
+                price: { $toInt: "$price" },
+                wsprice: { $toInt: "$wsprice" },
+                discount: { $toInt: "$discount" },
+                alertqty: { $toInt: "$alertqty" },
+                tax: { $toInt: "$tax" }
+              }
+            }
+          ]
+        );
+
+        if (result.modifiedCount > 0) {
+          return 'Fields successfully updated.';
+        } else {
+          return 'No fields updated.';
+        }
+      } catch (error) {
+        console.error(error);
+        return 'An error occurred while updating fields.';
+      }
     },
   },
 

@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const billSaleReturnSchema = mongoose.Schema({
   billdate: { type: Date, required: true },
-  saleretid: { type: Number,  unique: true},
+  saleretid: { type: Number},
   whareid: { type: mongoose.Schema.Types.ObjectId, ref: 'warehouseModel', required: true },
   custid: { type: mongoose.Schema.Types.ObjectId, ref: 'partyEntryModel', required: true },
   discount: { type: Number, default: 0 }, // Corrected syntax for default value

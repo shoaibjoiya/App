@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const billWasteSchema = mongoose.Schema({
   billdate: { type: Date, required: true },
-  wasteid: { type: Number,  unique: true},
+  wasteid: { type: Number},
   whareid: { type: mongoose.Schema.Types.ObjectId, ref: 'warehouseModel', required: true },
   custid: { type: String },
   customerName: { type: String },
