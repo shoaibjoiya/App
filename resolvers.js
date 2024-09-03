@@ -2740,7 +2740,62 @@ const resolvers = {
 
       return monthlyData;
     },
+    getExpiringProducts: async (_, { page, pageSize }) => {
+      // Calculate the number of documents to skip based on the page number and page size
+      const skip = (page - 1) * pageSize;
 
+      // Get the total count of expiring products
+      const totalCount = await billPurchaseModel.countDocuments([
+        { $unwind: "$purchasecart" },
+        {
+          $addFields: {
+            expiryInDays: {
+              $divide: [
+                { $subtract: ["$purchasecart.expiryDate", "$billdate"] },
+                1000 * 60 * 60 * 24 // Convert milliseconds to days
+              ]
+            }
+          }
+        },
+        { $match: { expiryInDays: { $lte: 90, $gte: 0 } } }
+      ]);
+
+      // Get the paginated list of expiring products
+      const products = await billPurchaseModel.aggregate([
+        { $unwind: "$purchasecart" },
+        {
+          $addFields: {
+            expiryInDays: {
+              $divide: [
+                { $subtract: ["$purchasecart.expiryDate", "$billdate"] },
+                1000 * 60 * 60 * 24 // Convert milliseconds to days
+              ]
+            }
+          }
+        },
+        { $match: { expiryInDays: { $lte: 90, $gte: 0 } } },
+        {
+          $project: {
+            _id: 0,
+            productName: "$purchasecart.name",
+            price: "$purchasecart.price",
+            quantity: "$purchasecart.quantity",
+            batchNo: "$purchasecart.batchNo",
+            expiryDate: "$purchasecart.expiryDate",
+            billdate: 1
+          }
+        },
+        { $skip: skip },
+        { $limit: pageSize }
+      ]);
+
+      // Return the paginated result
+      return {
+        products,
+        totalCount
+      };
+    },
+    
 
   },
   Mutation: 
@@ -5994,6 +6049,7 @@ const resolvers = {
         return 'An error occurred while updating fields.';
       }
     },
+    
   },
 
 };

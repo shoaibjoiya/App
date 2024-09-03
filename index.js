@@ -1,12 +1,13 @@
 
-// npm i @apollo/server express graphql cors bcryptjs dotenv jsonwebtoken mongoose nodemon
+
+// npm i @apollo/server graphql cors bcryptjs dotenv jsonwebtoken mongoose nodemon
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 import { ApolloServerPluginLandingPageDisabled } from '@apollo/server/plugin/disabled';
 import express from 'express';
 import http from 'http';
-import cors from 'cors'; 
+import cors from 'cors';
 import typeDefs from './schemaGql.js'
 import resolvers from './resolvers.js'
 import jwt from 'jsonwebtoken'
@@ -16,7 +17,7 @@ import dotenv from 'dotenv'
 dotenv.config()
 // Required logic for integrating with Express
 const app = express();
-// Our httpServer handles incoming requests to our Express app..
+// Our httpServer handles incoming requests to our Express app.
 // Below, we tell Apollo Server to "drain" this httpServer,
 // enabling our servers to shut down gracefully.
 const httpServer = http.createServer(app);
@@ -46,14 +47,14 @@ await mongoose.connect(process.env.MONGO_URI,options)
 
 
 
-
+ 
 // Same ApolloServer initialization as before, plus the drain plugin
 // for our httpServer.
 const server = new ApolloServer({
   typeDefs,
   resolvers,
-  introspection:false,
-  plugins: [ApolloServerPluginDrainHttpServer({ httpServer }),ApolloServerPluginLandingPageDisabled()],
+  introspection:true,
+  plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
 });
 // Ensure we wait for our server to start // ,ApolloServerPluginLandingPageDisabled()],
 await server.start();
@@ -62,7 +63,13 @@ await server.start();
 // and our expressMiddleware function.
 app.use(
   '/graphql',
-  cors(),
+  cors({
+    origin: ['https://salebook.pk','https://app.salebook.pk','http://localhost:5173'], // Allow requests from this origin
+    // Allow requests from this origin
+    methods: 'GET,POST,OPTIONS',
+    allowedHeaders: 'Content-Type,Authorization',
+    credentials: true,
+  }),
   express.json(),
   // expressMiddleware accepts the same arguments:
   // an Apollo Server instance and optional configuration options
@@ -93,6 +100,6 @@ app.use(
 );
 
 // Modified server startup
-await new Promise((resolve) => httpServer.listen({ port: 8000 }, resolve));
+await new Promise((resolve) => httpServer.listen({ port: 4000 }, resolve));
 
 console.log(`🚀 Server ready at http://localhost:4000/`);

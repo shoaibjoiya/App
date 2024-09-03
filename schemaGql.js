@@ -83,13 +83,28 @@ const typeDefs = `
     LedgerToatalSalpay(warehouseId: ID, customerId: ID): Float
     Ledgerotalsalereturnpay(warehouseId: ID, customerId: ID): Float
     
- ReportTotalDiscount: Float
- ReportTotalDiscountCart: Float
+    ReportTotalDiscount: Float
+    ReportTotalDiscountCart: Float
     getSumByWarehouse(warehouseId: ID): WarehouseSummary!
     searchSales(criteria: SalesSearchCriteria): [BillSaleWithName]
-
+    
     getMonthlyData: [MonthlyData]
+     getExpiringProducts(page: Int, pageSize: Int): ExpiringProductPage
 }
+
+type ExpiringProductPage {
+  products: [ExpiringProduct]
+  totalCount: Int
+}
+  type ExpiringProduct {
+  productName: String
+  price: Float
+  quantity: Float
+  batchNo: String
+  expiryDate: Date
+}
+
+
    type MonthlyData {
   month: String
   totalSales: Float
@@ -608,6 +623,8 @@ type Kitchen {
     quantity: Float
     discount: Float
     tax: Float
+    batchNo: String
+    expiryDate: Date
   }
   
   # Define input types for mutations
@@ -618,6 +635,8 @@ type Kitchen {
     quantity: Float
     discount: Float
     tax: Float
+    batchNo: String
+    expiryDate: Date
   }
   
   input CreateBillPurchaseInput {
