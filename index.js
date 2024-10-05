@@ -64,7 +64,7 @@ await server.start();
 app.use(
   '/graphql',
   cors({
-    origin: ['https://salebook.pk','https://app.salebook.pk','http://localhost:5173'], // Allow requests from this origin
+    origin: ['https://salebook.pk','https://app.salebook.pk','http://localhost:5173','https://salebook.pages.dev'], // Allow requests from this origin
     // Allow requests from this origin
     methods: 'GET,POST,OPTIONS',
     allowedHeaders: 'Content-Type,Authorization',
