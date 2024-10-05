@@ -66,8 +66,8 @@ app.use(
   cors({
     origin: ['https://salebook.pk','https://app.salebook.pk','http://localhost:5173','https://salebook.pages.dev'], // Allow requests from this origin
     // Allow requests from this origin
-    methods: 'GET,POST,OPTIONS',
-    allowedHeaders: 'Content-Type,Authorization',
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   }),
   express.json(),
