@@ -1,6 +1,9 @@
 
 import mongoose from 'mongoose';
+import autoIncrementFactory from 'mongoose-sequence';
 
+// Pass the mongoose instance to the factory
+const autoIncrement = autoIncrementFactory(mongoose);
 const itemsSchema = new mongoose.Schema({
   productname: { type: String, required: true },
   code:        { type: Number,  unique: true },
@@ -27,7 +30,7 @@ const itemsSchema = new mongoose.Schema({
 {
    timestamps: true 
 });
-
+itemsSchema.plugin(autoIncrement, { inc_field: 'code' });
 const itemsModel = mongoose.model("itemsModel", itemsSchema);
 
 export default itemsModel;

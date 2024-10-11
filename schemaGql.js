@@ -1,6 +1,6 @@
 const typeDefs = `
   scalar Date
-  
+
   type Query {
    
     getProjectById(id: ID!): Project
@@ -20,6 +20,7 @@ const typeDefs = `
     getUnits(page: Int, rows: Int, search: String): UnitResult!
     unitsbyid(id: ID!): Unit
     getItems(page: Int, rows: Int, search: String, cateid: ID,sortby: String): ItemResult!
+    getItemsRaw(page: Int, rows: Int, search: String, cateid: ID,sortby: String): ItemResult!
     getStocks(warehouseId: String, cateid: String, brandid: String, page: Int): StockData
     itemById(id: ID!): ItemWithName
     getSaleBill(page: Int, rows: Int, search: String,whareid: String ,billstatus: String): BillSaleResult!
@@ -240,6 +241,7 @@ type TotalExpense {
     phoneNumber: String
     country: String
     city: String
+    openingbalance: Float
     address: String
     acctype: String
     partytype: Boolean
@@ -381,15 +383,18 @@ input CreateExpenseEntryInput {
     brandid: Brand
     cateid: Category
     unitid: Unit
+    whareid:Warehouse
     barcode: [String]
-    cost: String
-    price: String
-    wsprice: String
-    discount: String
-    alertqty: String
-    stockqty: String
-    whareid: String
-    tax: String
+    cost: Float
+    price: Float
+    wsprice: Float
+    discount: Float
+    alertqty: Float
+    stockqty: Float
+    lockProduct: Boolean    # Changed to Boolean
+    ingredient: Boolean     # Changed to Boolean
+    isVariant: Boolean      # Changed to Boolean
+    tax: Float
     ordernote: String
     createdAt: String
   }
@@ -401,15 +406,19 @@ input CreateExpenseEntryInput {
     brandid: String
     cateid: String
     unitid: String
+
     barcode: [String]
-    cost: String
-    price: String
-    wsprice: String
-    discount: String
-    alertqty: String
-    stockqty: String
+    cost: Float  
+    price: Float  
+    wsprice: Float  
+    discount: Float  
+    alertqty: Float  
+    stockqty: Float  
+    tax: Float  
     whareid: String
-    tax: String
+    lockProduct: Boolean    # Changed to Boolean
+    ingredient: Boolean     # Changed to Boolean
+    isVariant: Boolean      # Changed to Boolean
     ordernote: String
   }
 
@@ -1003,6 +1012,7 @@ type Kitchen {
     createProductionDo(input: ProductionDoInput!): ProductionDoItem
     deleteproductionDo(id: ID!): String
     updateItemFields: String
+    deleteSellerData(sellerid: ID!): String
 
  }
 
@@ -1147,6 +1157,7 @@ type GetRidersResponse {
     phoneNumber: String
     country: String
     city: String
+    openingbalance: Float
     address: String
     acctype: String
     partytype: Boolean
@@ -1158,6 +1169,7 @@ type GetRidersResponse {
     phoneNumber: String
     country: String
     city: String
+    openingbalance: Float
     address: String
     acctype: String
     partytype: Boolean
@@ -1233,14 +1245,17 @@ input CreateTaskInput {
     cateid: String
     unitid: String
     barcode: [String]
-    cost: String
-    price: String
-    wsprice: String
-    discount: String
-    alertqty: String
-    stockqty: String
+    cost: Float  
+    price: Float  
+    wsprice: Float  
+    discount: Float  
+    alertqty: Float  
+    stockqty: Float  
     whareid: String
-    tax: String
+    tax: Float  
+    lockProduct: Boolean    # Changed to Boolean
+    ingredient: Boolean     # Changed to Boolean
+    isVariant: Boolean      # Changed to Boolean
     ordernote: String
   }
  input WasteCartItemInput {
@@ -1265,6 +1280,7 @@ input CreateTaskInput {
   input CreateBillSaleInput {
   billdate: String!
   whareid: ID!
+  saleid:ID
   custid: ID!
   discount: Float
   saletax: Float

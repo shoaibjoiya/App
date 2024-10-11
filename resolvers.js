@@ -2,63 +2,35 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
-import './models/TaskModel.js'
-import './models/userModel.js'
-import './models/categoryModel.js'
-import './models/brandsModel.js'
-import './models/unitsModel.js'
-import './models/itemsModel.js'
-import './models/billSaleModel.js'
-import './models/billSaleReturnModel.js'
-import './models/ProjectModel.js'
-import './models/billPurchaseModel.js'
-import './models/billPurchaseReturnModel.js'
-import './models/warehouseModel.js'
-import './models/expensecategoryModel.js'
-import './models/expenseEntryModel.js'
-import './models/partyEntryModel.js'
-import './models/sellerModel.js'
-import './models/billOrdersModel.js'
-import './models/billAdjustmentsModel.js'
-import './models/billTransfersModel.js'
-import './models/stockModel.js'
-import './models/kitchenModel.js';
-import  './models/waiterModel.js';
-import  './models/chefModel.js';
-import './models/riderModel.js';
-import './models/tableModel.js';
+
+import TaskModel from './models/TaskModel.js';
+import userModel from './models/userModel.js';
+import categoryModel from './models/categoryModel.js';
+import brandsModel from './models/brandsModel.js';
+import unitsModel from './models/unitsModel.js';
+import itemsModel from './models/itemsModel.js';
+import billSaleModel from './models/billSaleModel.js';
+import billSaleReturnModel from './models/billSaleReturnModel.js';
+import ProjectModel from './models/ProjectModel.js';
+import billPurchaseModel from './models/billPurchaseModel.js';
+import billPurchaseReturnModel from './models/billPurchaseReturnModel.js';
+import warehouseModel from './models/warehouseModel.js';
+import expensecategoryModel from './models/expensecategoryModel.js';
+import expenseEntryModel from './models/expenseEntryModel.js';
+import partyEntryModel from './models/partyEntryModel.js';
+import sellerModel from './models/sellerModel.js';
+import billOrdersModel from './models/billOrdersModel.js';
+import billAdjustmentsModel from './models/billAdjustmentsModel.js';
+import billTransfersModel from './models/billTransfersModel.js';
+import stockModel from './models/stockModel.js';
+import kitchenModel from './models/kitchenModel.js';
+import waiterModel from './models/waiterModel.js';
+import chefModel from './models/chefModel.js';
+import riderModel from './models/riderModel.js';
+import tableModel from './models/tableModel.js';
 import billWasteModel from './models/billWasteModel.js';
 import productionListModel from './models/productionListModel.js';
 import productionModel from './models/productionModel.js';
-import expenseEntryModel from './models/expenseEntryModel.js';
-
-
-
-const userModel = mongoose.model("userModel");
-const categoryModel = mongoose.model("categoryModel");
-const brandsModel = mongoose.model("brandsModel");
-const unitsModel = mongoose.model("unitsModel");
-const itemsModel = mongoose.model("itemsModel");
-const billSaleModel = mongoose.model("billSaleModel");
-const billSaleReturnModel = mongoose.model("billSaleReturnModel");
-const ProjectModel = mongoose.model("projectModel");
-const TaskModel = mongoose.model("taskModel");
-const billPurchaseModel = mongoose.model("billPurchaseModel");
-const billPurchaseReturnModel = mongoose.model("billPurchaseReturnModel");
-const warehouseModel = mongoose.model("warehouseModel");
-const expensecategoryModel = mongoose.model("expensecategoryModel");
-const ExpenseEntryModel = mongoose.model("expenseEntryModel");
-const partyEntryModel = mongoose.model("partyEntryModel");
-const sellerModel = mongoose.model("sellerModel");
-const billAdjustmentsModel = mongoose.model("billAdjustmentsModel");
-const billOrdersModel = mongoose.model("billOrdersModel");
-const billTransfersModel = mongoose.model("billTransfersModel");
-const stockModel = mongoose.model("stockModel");
-const kitchenModel = mongoose.model("kitchenModel");
-const chefModel = mongoose.model("chefModel");
-const riderModel = mongoose.model("riderModel");
-const waiterModel = mongoose.model("waiterModel");
-const tableModel = mongoose.model("tableModel");
 
 const resolvers = {
   Query: {
@@ -152,10 +124,10 @@ const resolvers = {
         let sortOption = { createdAt: -1 }; // Default sort by createdAt descending
         if (args.sortby) {
           const sortBy = args.sortby.toLowerCase();
-        
+
           if (sortBy === 'createdat_asc') {
             sortOption = { createdAt: 1 }; // Sort by createdAt ascending
-          } else if ( sortBy === 'createdat_desc') {
+          } else if (sortBy === 'createdat_desc') {
             sortOption = { createdAt: -1 }; // Sort by createdAt descending
           } else if (sortBy === 'price_asc') {
             sortOption = { price: 1 }; // Sort by price ascending
@@ -164,7 +136,7 @@ const resolvers = {
           }
           // Add more conditions for other sortable fields as needed
         }
-        
+
         const categories = await categoryModel
           .find(query)
           .sort(sortOption)
@@ -458,8 +430,8 @@ const resolvers = {
         }
         const items = await itemsModel.findById(id).populate('brandid', '_id name ')
           .populate('cateid', '_id name ')
-          .populate('unitid', '_id name ');
-
+          .populate('unitid', '_id name ')
+          .populate('whareid', '_id name ');
         // Return the category as an array or null if not found
         return items;
         // const category = await categoryModel.findById({_id:id })
@@ -488,13 +460,15 @@ const resolvers = {
         if (args.cateid) {
           query.cateid = args.cateid;
         }
+        query.lockProduct = false;
+
         let sortOption = { createdAt: -1 }; // Default sort by createdAt descending
         if (args.sortby) {
           const sortBy = args.sortby;
-        
+
           if (sortBy === 'createdat_asc') {
             sortOption = { createdAt: 1 }; // Sort by createdAt ascending
-          } else if ( sortBy === 'createdat_desc') {
+          } else if (sortBy === 'createdat_desc') {
             sortOption = { createdAt: -1 }; // Sort by createdAt descending
           } else if (sortBy === 'price_asc') {
             sortOption = { price: 1 }; // Sort by price ascending
@@ -503,7 +477,68 @@ const resolvers = {
           }
           // Add more conditions for other sortable fields as needed
         }
-        
+
+        const items = await itemsModel
+          .find(query)
+          .populate('brandid', '_id name ')
+          .populate('cateid', '_id name ')
+          .populate('unitid', '_id name ')
+          .sort(sortOption)
+          .skip((args.page - 1) * args.rows)
+          .limit(args.rows || 10);
+
+        const itemCount = await itemsModel.countDocuments(query);
+
+        return {
+          items: items.map((item) => ({
+            ...item._doc,
+            createdAt: item.createdAt.toISOString(),
+          })),
+          itemCount: itemCount,
+        };
+      } catch (err) {
+        throw err;
+      }
+    },
+    getItemsRaw: async (_, args, context) => {
+      const { userId, sellerId } = context;
+      try {
+        if (!userId) {
+          throw new Error('You must be logged in with a mobile number.');
+        }
+
+        let query = {};
+        if (args.search) {
+          const search = new RegExp(
+            args.search.replace(/[\\\[\]()+?.*]/g, (c) => '\\' + c),
+            'i'
+          );
+          query = { productname: search, sellerid: sellerId };
+        } else {
+          query = { sellerid: sellerId };
+        }
+        if (args.cateid) {
+          query.cateid = args.cateid;
+        }
+        query.lockProduct = false;
+        query.ingredient =true;
+
+        let sortOption = { createdAt: -1 }; // Default sort by createdAt descending
+        if (args.sortby) {
+          const sortBy = args.sortby;
+
+          if (sortBy === 'createdat_asc') {
+            sortOption = { createdAt: 1 }; // Sort by createdAt ascending
+          } else if (sortBy === 'createdat_desc') {
+            sortOption = { createdAt: -1 }; // Sort by createdAt descending
+          } else if (sortBy === 'price_asc') {
+            sortOption = { price: 1 }; // Sort by price ascending
+          } else if (sortBy === 'price_desc') {
+            sortOption = { price: -1 }; // Sort by price descending
+          }
+          // Add more conditions for other sortable fields as needed
+        }
+
         const items = await itemsModel
           .find(query)
           .populate('brandid', '_id name ')
@@ -532,10 +567,10 @@ const resolvers = {
         if (!userId) {
           throw new Error('You must be logged in with a mobile number.');
         }
-    
+
         // Initialize query with userId
         let query = { userid: userId };
-    
+
         // Add search term if provided
         if (args.search) {
           const search = new RegExp(
@@ -544,17 +579,17 @@ const resolvers = {
           );
           query.custid = search;
         }
-    
+
         // Add whareid filter if provided
         if (args.whareid) {
           query.whareid = args.whareid;
         }
-    
+
         // Add billstatus filter if provided
         if (args.billstatus) {
           query.billstatus = args.billstatus;
         }
-    
+
         // Fetch sale bills with the constructed query
         const saleBills = await billSaleModel
           .find(query)
@@ -563,14 +598,14 @@ const resolvers = {
           .sort({ createdAt: -1 })
           .skip((args.page - 1) * args.rows)
           .limit(args.rows);
-    
+
         // Count total documents matching the query
         const saleBillCount = await billSaleModel.countDocuments(query);
-    
+
         return {
           saleBills: saleBills.map((saleBill) => ({
             ...saleBill._doc,
-           
+
           })),
           saleBillCount: saleBillCount,
         };
@@ -591,7 +626,7 @@ const resolvers = {
             args.search.replace(/[\\\[\]()+?.*]/g, (c) => '\\' + c),
             'i'
           );
-          query = {  userid: userId };
+          query = { userid: userId };
         } else {
           query = { userid: userId };
         }
@@ -603,7 +638,7 @@ const resolvers = {
           .skip((args.page - 1) * args.rows)
           .limit(args.rows);
 
-        const wasteBillCount = await billWasteModel.countDocuments(query)||0;
+        const wasteBillCount = await billWasteModel.countDocuments(query) || 0;
 
         return {
           wasteBills: wastebills.map((wasteBills) => ({
@@ -842,7 +877,7 @@ const resolvers = {
         if (!userId) {
           throw new Error('You must be logged in.');
         }
-    
+
         // Find the product by name to get its ID
         let productIds = [];
         if (args.search) {
@@ -850,7 +885,7 @@ const resolvers = {
           const products = await itemsModel.find({ productname: search });
           productIds = products.map(product => product._id);
         }
-    
+
         // Create the query for production bills
         let query = { userid: userId };
         if (productIds.length > 0) {
@@ -859,7 +894,7 @@ const resolvers = {
             productId: { $in: productIds }
           };
         }
-    
+
         const productionList = await productionListModel
           .find(query)
           .populate('productId', '_id productname') // Populate the productId field with name
@@ -870,9 +905,9 @@ const resolvers = {
           .sort({ createdAt: -1 })
           .skip((args.page - 1) * args.rows)
           .limit(args.rows || 10);
-    
+
         const totalCount = await productionListModel.countDocuments(query);
-    
+
         return {
           productionBill: productionList.map((item) => ({
             ...item._doc,
@@ -885,21 +920,21 @@ const resolvers = {
         console.error("Error fetching production bills:", err);
         throw new Error(`Error fetching production bills: ${err.message}`);
       }
-    },   
+    },
     getProductionDoBills: async (_, args, context) => {
       const { userId } = context;
       try {
         if (!userId) {
           throw new Error('You must be logged in.');
         }
-    
+
         let productIds = [];
         if (args.search) {
           const search = new RegExp(args.search.replace(/[\\\[\]()+?.*]/g, '\\$&'), 'i');
           const products = await itemsModel.find({ productname: search });
           productIds = products.map(product => product._id);
         }
-    
+
         let query = { userid: userId };
         if (productIds.length > 0) {
           query = {
@@ -907,7 +942,7 @@ const resolvers = {
             'prodcart.productId': { $in: productIds }
           };
         }
-    
+
         const productionList = await productionModel
           .find(query)
           .populate({
@@ -917,9 +952,9 @@ const resolvers = {
           .sort({ createdAt: -1 })
           .skip((args.page - 1) * args.rows)
           .limit(args.rows || 10);
-    
+
         const totalCount = await productionModel.countDocuments(query);
-    
+
         return {
           productionBill: productionList.map((item) => ({
             ...item._doc,
@@ -932,7 +967,7 @@ const resolvers = {
         console.error("Error fetching production bills:", err);
         throw new Error(`Error fetching production bills: ${err.message}`);
       }
-    }, 
+    },
     getAdjustmentBill: async (_, args, context) => {
       const { userId } = context;
       try {
@@ -1030,7 +1065,7 @@ const resolvers = {
         if (!userId) {
           throw new Error('You must be logged in with a mobile number.');
         }
-        const expenseEntry = await ExpenseEntryModel.findById(id).populate('wareid', '_id name')
+        const expenseEntry = await expenseEntryModel.findById(id).populate('wareid', '_id name')
           .populate('cateid', '_id name');
 
         return expenseEntry;
@@ -1039,7 +1074,7 @@ const resolvers = {
       }
     },
     getExpenseEntries: async (_, args, context) => {
-      const { userId,sellerId} = context;
+      const { userId, sellerId } = context;
 
       try {
         if (!userId) {
@@ -1055,7 +1090,7 @@ const resolvers = {
           query.cateid = search; // Add title search to the query
         }
 
-        const expenseEntries = await ExpenseEntryModel
+        const expenseEntries = await expenseEntryModel
           .find(query)
           .populate('wareid', '_id name ')
           .populate('cateid', '_id name ')
@@ -1063,7 +1098,7 @@ const resolvers = {
           .skip((args.page - 1) * args.rows)
           .limit(args.rows || 10);
 
-        const expenseEntryCount = await ExpenseEntryModel.countDocuments(query) || 0;
+        const expenseEntryCount = await expenseEntryModel.countDocuments(query) || 0;
 
         return {
           expenseEntries: expenseEntries.map((entry) => ({
@@ -1293,7 +1328,7 @@ const resolvers = {
           throw new Error('You must be logged in with a mobile number.');
         }
 
-        let query = { sellerid: sellerId , reserved: false};
+        let query = { sellerid: sellerId, reserved: false };
 
         if (search) {
           const searchRegex = new RegExp(search.replace(/[\\\[\]()+?.*]/g, (c) => '\\' + c), 'i');
@@ -1423,65 +1458,65 @@ const resolvers = {
     //reports 
     //sale reports
     ReportgetsaleBills: async (_, { warehouseId, customerId, userIds, paymentStatus, startDate, endDate, page }, context) => {
-          const { userId, sellerId } = context;
-    
-          try {
-            if (!userId) {
-              throw new Error('You must be logged in with a mobile number.');
-            }
-    
-            // Convert startDate and endDate to Date objects
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-            
-            let query = { 
-              sellerid: sellerId, 
-              billdate: { $gte: start, $lte: end } 
-            };
-    
-            if (customerId) {
-              query.custid = customerId;
-            }
-            if (warehouseId) {
-              query.whareid = warehouseId;
-            }
-            if (userIds && userIds.length > 0) {
-              query.userid = { $in: userIds };
-            }
-            if (paymentStatus) {
-              query.paymentstatus = paymentStatus;
-            }
-    
-            const totalCount = await billSaleModel.countDocuments(query);
-    
-            const bills = await billSaleModel
-              .find(query)
-              .populate('whareid', '_id name')
-              .populate('custid', '_id name')
-              .sort({ createdAt: -1 })
-              .skip((page - 1) * 10)
-              .limit(10);
-    
-            return {
-              bills: bills.map(bill => ({
-                ...bill._doc,
-              })),
-              totalCount: totalCount,
-            };
-          } catch (error) {
-            throw new Error('Error fetching bills: ' + error.message);
-          }
+      const { userId, sellerId } = context;
+
+      try {
+        if (!userId) {
+          throw new Error('You must be logged in with a mobile number.');
+        }
+
+        // Convert startDate and endDate to Date objects
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        let query = {
+          sellerid: sellerId,
+          billdate: { $gte: start, $lte: end }
+        };
+
+        if (customerId) {
+          query.custid = customerId;
+        }
+        if (warehouseId) {
+          query.whareid = warehouseId;
+        }
+        if (userIds && userIds.length > 0) {
+          query.userid = { $in: userIds };
+        }
+        if (paymentStatus) {
+          query.paymentstatus = paymentStatus;
+        }
+
+        const totalCount = await billSaleModel.countDocuments(query);
+
+        const bills = await billSaleModel
+          .find(query)
+          .populate('whareid', '_id name')
+          .populate('custid', '_id name')
+          .sort({ createdAt: -1 })
+          .skip((page - 1) * 10)
+          .limit(10);
+
+        return {
+          bills: bills.map(bill => ({
+            ...bill._doc,
+          })),
+          totalCount: totalCount,
+        };
+      } catch (error) {
+        throw new Error('Error fetching bills: ' + error.message);
+      }
     },
     // ReportTodaySalesBetween: async (_, { warehouseId, customerId, userIds, paymentStatus,startDate, endDate }, context) => {
     //       try {
     //         const { sellerId } = context;
-            
+
     //         const startOfDay = new Date(startDate);
     //         startOfDay.setUTCHours(0, 0, 0, 0); 
-    
+
     //         const endOfDay = new Date(endDate);
     //         endOfDay.setUTCHours(23, 59, 59, 999); 
-            
+
     //         const salesBetweenDates = await billSaleModel.aggregate([
     //           {
     //             $match: {
@@ -1499,7 +1534,7 @@ const resolvers = {
     //             }
     //           }
     //         ]);
-            
+
     //         return salesBetweenDates.length > 0 ? salesBetweenDates[0].totalSales : 0; 
     //       } catch (error) {
     //         console.error('Error:', error);
@@ -1508,21 +1543,21 @@ const resolvers = {
     // },   
     ReportTodaySalesBetween: async (_, { warehouseId, customerId, userIds, paymentStatus, startDate, endDate }, context) => {
       const { sellerId } = context;
-    
+
       try {
         if (!sellerId) {
           throw new Error('You must be logged in with a valid seller ID.');
         }
-    
+
         // Convert startDate and endDate to Date objects
         const start = new Date(startDate);
         const end = new Date(endDate);
-    
-        let query = { 
-          sellerid: new mongoose.Types.ObjectId(sellerId), 
+
+        let query = {
+          sellerid: new mongoose.Types.ObjectId(sellerId),
           billdate: { $gte: start, $lte: end }
         };
-    
+
         if (customerId) {
           query.custid = new mongoose.Types.ObjectId(customerId);
         }
@@ -1535,7 +1570,7 @@ const resolvers = {
         if (paymentStatus) {
           query.paymentstatus = paymentStatus;
         }
-    
+
         // Aggregate to get total sales
         const salesBetweenDates = await billSaleModel.aggregate([
           {
@@ -1548,14 +1583,14 @@ const resolvers = {
             }
           }
         ]);
-    
+
         return salesBetweenDates.length > 0 ? salesBetweenDates[0].totalSales : 0;
-    
+
       } catch (error) {
         console.error('Error fetching sales:', error);
         throw new Error('Error fetching sales: ' + error.message);
       }
-    },    
+    },
     ReportTotalPendingCash: async (_, __, context) => {
       try {
         const { sellerId } = context;
@@ -1622,7 +1657,7 @@ const resolvers = {
         const { userId } = context;
         const startOfDay = new Date(startDate);
         const endOfDay = new Date(endDate);
-    
+
         const todaySales = await billSaleModel.aggregate([
           {
             $match: {
@@ -1640,23 +1675,23 @@ const resolvers = {
             }
           }
         ]);
-    
+
         return todaySales.length > 0 ? todaySales[0].totalSales : 0;
       } catch (error) {
         console.error('Error:', error);
         return null;
       }
-    },    
+    },
     ReportTodaySales: async (_, __, context) => {
       try {
         const { sellerId } = context;
-        
+
         const startOfToday = new Date();
         startOfToday.setUTCHours(0, 0, 0, 0); // Set hours, minutes, seconds, and milliseconds to zero in UTC time
-        
+
         const endOfToday = new Date();
         endOfToday.setUTCHours(23, 59, 59, 999); // Set hours, minutes, seconds, and milliseconds to end of day in UTC time
-        
+
         const todaySales = await billSaleModel.aggregate([
           {
             $match: {
@@ -1673,23 +1708,23 @@ const resolvers = {
               totalSales: { $sum: "$totalamount" }
             }
           }
-        ]);         
+        ]);
         // Return the total sales for today
         return todaySales.length > 0 ? todaySales[0].totalSales : 0; // If there are no sales today, return 0
       } catch (error) {
         console.error('Error:', error);
         return null;
       }
-    },     
+    },
     ReportPreviousDaySales: async (_, __, context) => {
       try {
         const { sellerId } = context;
-    
+
         // Calculate the start and end of yesterday
         const now = new Date();
         const startOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
         const endOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
+
         // Aggregation pipeline to calculate total sales for the previous day
         const previousDaySales = await billSaleModel.aggregate([
           {
@@ -1708,14 +1743,14 @@ const resolvers = {
             }
           }
         ]);
-    
+
         // Return the total sales for yesterday
         return previousDaySales.length > 0 ? previousDaySales[0].totalSales : 0;
       } catch (error) {
         console.error('Error:', error);
         return null;
       }
-    },        
+    },
     ReportgetsalereturnBills: async (_, { warehouseId, customerId, userIds, paymentStatus, startDate, endDate, page }, context) => {
       const { userId, sellerId } = context;
 
@@ -1761,21 +1796,21 @@ const resolvers = {
     },
     ReportTodaySalesreturnBetween: async (_, { warehouseId, customerId, userIds, paymentStatus, startDate, endDate }, context) => {
       const { sellerId } = context;
-    
+
       try {
         if (!sellerId) {
           throw new Error('You must be logged in with a valid seller ID.');
         }
-    
+
         // Convert startDate and endDate to Date objects
         const start = new Date(startDate);
         const end = new Date(endDate);
-    
-        let query = { 
-          sellerid: new mongoose.Types.ObjectId(sellerId), 
+
+        let query = {
+          sellerid: new mongoose.Types.ObjectId(sellerId),
           billdate: { $gte: start, $lte: end }
         };
-    
+
         if (customerId) {
           query.custid = new mongoose.Types.ObjectId(customerId);
         }
@@ -1788,7 +1823,7 @@ const resolvers = {
         if (paymentStatus) {
           query.paymentstatus = paymentStatus;
         }
-    
+
         // Aggregate to get total sales
         const salesBetweenDates = await billSaleReturnModel.aggregate([
           {
@@ -1801,14 +1836,14 @@ const resolvers = {
             }
           }
         ]);
-    
+
         return salesBetweenDates.length > 0 ? salesBetweenDates[0].totalSales : 0;
-    
+
       } catch (error) {
         console.error('Error fetching sales:', error);
         throw new Error('Error fetching sales: ' + error.message);
       }
-    }, 
+    },
     ReportTotalPendingsalereturnCash: async (_, __, context) => {
       try {
         const { sellerId } = context;
@@ -1877,8 +1912,10 @@ const resolvers = {
       const { sellerId } = context;
       try {
         const sales = await billSaleModel.aggregate([
-          { $match: 
-            { sellerid: new mongoose.Types.ObjectId(sellerId) ,billdate: { $gte: start, $lt: end } } },
+          {
+            $match:
+              { sellerid: new mongoose.Types.ObjectId(sellerId), billdate: { $gte: start, $lt: end } }
+          },
           { $unwind: '$salecart' },
           {
             $lookup: {
@@ -1903,7 +1940,7 @@ const resolvers = {
             },
           },
         ]);
-    
+
         // Directly return the float value
         return sales.length > 0 ? sales[0].totalProfit : 0;
       } catch (error) {
@@ -1911,9 +1948,9 @@ const resolvers = {
         throw new Error('Unable to calculate daily profit');
       }
     },
-    
- 
-    
+
+
+
     //purchase reports
     ReportgetsalePurchaseBills: async (_, { warehouseId, customerId, userIds, paymentStatus, startDate, endDate, page }, context) => {
       const { userId, sellerId } = context;
@@ -1962,21 +1999,21 @@ const resolvers = {
     },
     ReportTodayPurBetween: async (_, { warehouseId, customerId, userIds, paymentStatus, startDate, endDate }, context) => {
       const { sellerId } = context;
-    
+
       try {
         if (!sellerId) {
           throw new Error('You must be logged in with a valid seller ID.');
         }
-    
+
         // Convert startDate and endDate to Date objects
         const start = new Date(startDate);
         const end = new Date(endDate);
-    
-        let query = { 
-          sellerid: new mongoose.Types.ObjectId(sellerId), 
+
+        let query = {
+          sellerid: new mongoose.Types.ObjectId(sellerId),
           billdate: { $gte: start, $lte: end }
         };
-    
+
         if (customerId) {
           query.custid = new mongoose.Types.ObjectId(customerId);
         }
@@ -1989,7 +2026,7 @@ const resolvers = {
         if (paymentStatus) {
           query.paymentstatus = paymentStatus;
         }
-    
+
         // Aggregate to get total sales
         const salesBetweenDates = await billPurchaseModel.aggregate([
           {
@@ -2002,14 +2039,14 @@ const resolvers = {
             }
           }
         ]);
-    
+
         return salesBetweenDates.length > 0 ? salesBetweenDates[0].totalSales : 0;
-    
+
       } catch (error) {
         console.error('Error fetching sales:', error);
         throw new Error('Error fetching sales: ' + error.message);
       }
-    }, 
+    },
     ReportTotalPendingPurchaseCash: async (_, __, context) => {
       try {
         const { sellerId } = context;
@@ -2119,21 +2156,21 @@ const resolvers = {
     },
     ReportTodayPurreturnBetween: async (_, { warehouseId, customerId, userIds, paymentStatus, startDate, endDate }, context) => {
       const { sellerId } = context;
-    
+
       try {
         if (!sellerId) {
           throw new Error('You must be logged in with a valid seller ID.');
         }
-    
+
         // Convert startDate and endDate to Date objects
         const start = new Date(startDate);
         const end = new Date(endDate);
-    
-        let query = { 
-          sellerid: new mongoose.Types.ObjectId(sellerId), 
+
+        let query = {
+          sellerid: new mongoose.Types.ObjectId(sellerId),
           billdate: { $gte: start, $lte: end }
         };
-    
+
         if (customerId) {
           query.custid = new mongoose.Types.ObjectId(customerId);
         }
@@ -2146,7 +2183,7 @@ const resolvers = {
         if (paymentStatus) {
           query.paymentstatus = paymentStatus;
         }
-    
+
         // Aggregate to get total sales
         const salesBetweenDates = await billPurchaseReturnModel.aggregate([
           {
@@ -2159,14 +2196,14 @@ const resolvers = {
             }
           }
         ]);
-    
+
         return salesBetweenDates.length > 0 ? salesBetweenDates[0].totalSales : 0;
-    
+
       } catch (error) {
         console.error('Error fetching sales:', error);
         throw new Error('Error fetching sales: ' + error.message);
       }
-    }, 
+    },
     ReportTotalPendingpurchasereturnCash: async (_, __, context) => {
       try {
         const { sellerId } = context;
@@ -2248,9 +2285,9 @@ const resolvers = {
           query.wareid = warehouseId;
         }
 
-        const totalCount = await ExpenseEntryModel.countDocuments(query);
+        const totalCount = await expenseEntryModel.countDocuments(query);
 
-        const bills = await ExpenseEntryModel
+        const bills = await expenseEntryModel
           .find(query)
           .populate('wareid', '_id name')
           .populate('cateid', '_id name')
@@ -2272,7 +2309,7 @@ const resolvers = {
 
       try {
         const { sellerId } = context;
-        const totalSales = await ExpenseEntryModel.aggregate([
+        const totalSales = await expenseEntryModel.aggregate([
           {
             $match: { sellerid: new mongoose.Types.ObjectId(sellerId) }
           },
@@ -2542,12 +2579,12 @@ const resolvers = {
         throw new Error('Error fetching sales');
       }
     },
-    getSumByWarehouse: async (_, { warehouseId}, context) => {
+    getSumByWarehouse: async (_, { warehouseId }, context) => {
       try {
-       // console.log('Warehouse ID:', warehouseId);
-       // const documents = await stockModel.find({ warehouseId: new mongoose.Types.ObjectId(warehouseId) });
+        // console.log('Warehouse ID:', warehouseId);
+        // const documents = await stockModel.find({ warehouseId: new mongoose.Types.ObjectId(warehouseId) });
         //console.log('Documents found:', documents);
-        
+
         const result = await stockModel.aggregate([
           { $match: { warehouseId: new mongoose.Types.ObjectId(warehouseId) } }, // Match documents by warehouseId
           {
@@ -2573,9 +2610,9 @@ const resolvers = {
             }
           }
         ]);
-    
-       // console.log('Aggregation Result:', result); // Log the result for debugging
-    
+
+        // console.log('Aggregation Result:', result); // Log the result for debugging
+
         if (result.length > 0) {
           return {
             totalCost: result[0].totalCost,
@@ -2595,7 +2632,7 @@ const resolvers = {
     ReportTotalDiscount: async (_, __, context) => {
       try {
         const { sellerId } = context;
-    console.log('Warehouse ID:', sellerId);
+        console.log('Warehouse ID:', sellerId);
         // Aggregate the total discount across all bill sales for a given seller
         const totalDiscounts = await billSaleModel.aggregate([
           {
@@ -2608,12 +2645,12 @@ const resolvers = {
             }
           }
         ]);
-    
+
         if (totalDiscounts.length === 0) {
           // No discounts found for the seller
           return 0;
         }
-    
+
         // Return the total discount
         return totalDiscounts[0].totalDiscount;
       } catch (error) {
@@ -2624,7 +2661,7 @@ const resolvers = {
     ReportTotalDiscountCart: async (_, __, context) => {
       try {
         const { sellerId } = context;
-    
+
         // Aggregate discounts across all bill sales for a given seller
         const totalDiscounts = await billSaleModel.aggregate([
           {
@@ -2640,12 +2677,12 @@ const resolvers = {
             }
           }
         ]);
-    
+
         if (totalDiscounts.length === 0) {
           // No discounts found for the seller
           return 0;
         }
-    
+
         // Return the total discount
         return totalDiscounts[0].totalDiscount;
       } catch (error) {
@@ -2660,8 +2697,8 @@ const resolvers = {
       // Fetch Monthly Sales
       const salesData = await billSaleModel.aggregate([
         {
-          $match: { 
-            sellerid: new mongoose.Types.ObjectId(sellerId) , // Filter by sellerId
+          $match: {
+            sellerid: new mongoose.Types.ObjectId(sellerId), // Filter by sellerId
             billdate: {
               $gte: new Date(`${currentYear}-01-01`),
               $lt: new Date(`${currentYear + 1}-01-01`),
@@ -2683,7 +2720,7 @@ const resolvers = {
       const purchaseData = await billPurchaseModel.aggregate([
         {
           $match: {
-            sellerid: new mongoose.Types.ObjectId(sellerId) , // Filter by sellerId
+            sellerid: new mongoose.Types.ObjectId(sellerId), // Filter by sellerId
             billdate: {
               $gte: new Date(`${currentYear}-01-01`),
               $lt: new Date(`${currentYear + 1}-01-01`),
@@ -2705,7 +2742,7 @@ const resolvers = {
       const expenseData = await expenseEntryModel.aggregate([
         {
           $match: {
-            sellerid: new mongoose.Types.ObjectId(sellerId) , // Filter by sellerId
+            sellerid: new mongoose.Types.ObjectId(sellerId), // Filter by sellerId
             date: {
               $gte: new Date(`${currentYear}-01-01`),
               $lt: new Date(`${currentYear + 1}-01-01`),
@@ -2740,12 +2777,12 @@ const resolvers = {
 
       return monthlyData;
     },
-    getExpiringProducts: async (_, { page, pageSize }) => {
-      // Calculate the number of documents to skip based on the page number and page size
+    getExpiringProducts: async (_, { page, pageSize }, context) => {
+      const { sellerId } = context;
       const skip = (page - 1) * pageSize;
 
       // Get the total count of expiring products
-      const totalCount = await billPurchaseModel.countDocuments([
+      const totalCountAggregation = await billPurchaseModel.aggregate([
         { $unwind: "$purchasecart" },
         {
           $addFields: {
@@ -2757,8 +2794,16 @@ const resolvers = {
             }
           }
         },
-        { $match: { expiryInDays: { $lte: 90, $gte: 0 } } }
+        {
+          $match: {
+            sellerid: new mongoose.Types.ObjectId(sellerId), // Filter by sellerId
+            expiryInDays: { $lte: 90, $gte: 0 } // Products expiring in <= 90 days and >= 0 days
+          }
+        },
+        { $count: "totalCount" } // Add count stage
       ]);
+
+      const totalCount = totalCountAggregation.length > 0 ? totalCountAggregation[0].totalCount : 0;
 
       // Get the paginated list of expiring products
       const products = await billPurchaseModel.aggregate([
@@ -2773,7 +2818,12 @@ const resolvers = {
             }
           }
         },
-        { $match: { expiryInDays: { $lte: 90, $gte: 0 } } },
+        {
+          $match: {
+            sellerid: new mongoose.Types.ObjectId(sellerId), // Filter by sellerId
+            expiryInDays: { $lte: 90, $gte: 0 } // Products expiring in <= 90 days and >= 0 days
+          }
+        },
         {
           $project: {
             _id: 0,
@@ -2795,10 +2845,11 @@ const resolvers = {
         totalCount
       };
     },
-    
+
+
 
   },
-  Mutation: 
+  Mutation:
   {
     signupUser: async (_, { userNew }) => {
       try {
@@ -2962,13 +3013,13 @@ const resolvers = {
 
         // Sign the token with userId and set expiration to 10 hours
         const token = jwt.sign(
-          { userId: user._id,name:user.name ,role: user.role, sellerId: user.sellerid,sellerInfo },
+          { userId: user._id, name: user.name, role: user.role, sellerId: user.sellerid, sellerInfo },
           process.env.JWT_SECRET,
           { expiresIn: '10h' }
         );
 
         // Return the authentication payload including sellerInfo
-        return { token,sellerInfo };
+        return { token, sellerInfo };
       } catch (error) {
         throw new Error('Error signing in user: ' + error.message);
       }
@@ -2981,13 +3032,13 @@ const resolvers = {
         if (!userId) {
           throw new Error("You must be logged in");
         }
-  // Check if the user has the correct role
-      // if (!['seller', 'subuser'].includes(role)) {
-      //   throw new Error("You do not have the required permissions to add a category");
-      // }
-      if (role !== 'seller') {
-        throw new Error("You do not have the required permissions to add a category");
-      }
+        // Check if the user has the correct role
+        // if (!['seller', 'subuser'].includes(role)) {
+        //   throw new Error("You do not have the required permissions to add a category");
+        // }
+        if (role !== 'seller') {
+          throw new Error("You do not have the required permissions to add a category");
+        }
         if (!name) {
           throw new Error("Name is required");
         }
@@ -3050,11 +3101,11 @@ const resolvers = {
     },
     DelteCategory: async (_, args, context) => {
       const { userId, role } = context;
-      
+
       if (!userId) {
         throw new Error("You must be logged in");
       }
-     //console.log(role);
+      //console.log(role);
       if (role === 'subuser') {
         throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
@@ -3135,12 +3186,12 @@ const resolvers = {
       if (!userId) {
         throw new Error("You must be logged in");
       }
-     //console.log(role);
+      //console.log(role);
       if (role === 'subuser') {
         throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
       // Count the number of items associated with the category ID
-      const itemCount = await ExpenseEntryModel.countDocuments({ cateid: args.id });
+      const itemCount = await expenseEntryModel.countDocuments({ cateid: args.id });
 
       if (itemCount > 0) {
         throw new Error("Cannot delete category as it is referenced in expenseEntry");
@@ -3226,7 +3277,7 @@ const resolvers = {
       if (!userId) {
         throw new Error("You must be logged in");
       }
-     //console.log(role);
+      //console.log(role);
       if (role === 'subuser') {
         throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
@@ -3314,7 +3365,7 @@ const resolvers = {
       if (!userId) {
         throw new Error("You must be logged in");
       }
-     //console.log(role);
+      //console.log(role);
       if (role === 'subuser') {
         throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
@@ -3410,7 +3461,7 @@ const resolvers = {
       if (!userId) {
         throw new Error("You must be logged in");
       }
-     //console.log(role);
+      //console.log(role);
       if (role === 'subuser') {
         throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
@@ -3443,6 +3494,9 @@ const resolvers = {
           stockqty,
           whareid,
           tax,
+          lockProduct,    // Adding new field
+          ingredient,     // Adding new field
+          isVariant,      // Adding new field
           ordernote,
         } = item;
 
@@ -3477,13 +3531,9 @@ const resolvers = {
           barcodeArray = barcode; // Assign the provided barcode array
         }
 
-        // Find the maximum code in the database
-        // const maxItem = await itemsModel.findOne({}, { code: 1 }, { sort: { 'code': -1 } });
-        const maxItem = await itemsModel.findOne({}, { code: 1 }).sort({ 'code': -1 });
-        let newCode = maxItem && maxItem.code ? parseInt(maxItem.code) + 1 : 1000;
+
         const newItemData = {
           productname: lowerCaseProductName,
-          code: newCode,
           brandid,
           cateid,
           unitid,
@@ -3496,6 +3546,9 @@ const resolvers = {
           whareid,
           tax,
           ordernote,
+          lockProduct,    // Adding new field
+          ingredient,     // Adding new field
+          isVariant,      // Adding new field
           userid: userId,
           sellerid: sellerId,
           barcode: barcodeArray,
@@ -3506,7 +3559,7 @@ const resolvers = {
         // Save the new item
         const savedItem = await newItem.save();
 
-      
+
         if (stockqty && whareid) {
           const stock = new stockModel({
             productId: savedItem._id,
@@ -3514,10 +3567,10 @@ const resolvers = {
             quantity: stockqty,
             sellerid: sellerId
           });
-    
+
           await stock.save();
         }
-       
+
         return {
           ...savedItem._doc,
           createdAt: savedItem.createdAt.toISOString(),
@@ -3533,7 +3586,7 @@ const resolvers = {
         if (!userId) {
           throw new Error("You must be logged in");
         }
-      
+
         // Convert the updated item name to lowercase for case-insensitive comparison
         if (updatedItem.productname) {
           updatedItem.productname = updatedItem.productname.toLowerCase();
@@ -3559,22 +3612,22 @@ const resolvers = {
           }
           barcodeArray = updatedItem.barcode; // Assign the provided barcode array
         }
-        if (updatedItem.stockqty !== undefined && updatedItem.stockqty > 0) {
-          let stock = await stockModel.findOne({ productId: id, warehouseId: updatedItem.whareid, sellerid: sellerId });
-          if (stock) {
-            stock.quantity += parseInt(updatedItem.stockqty);
-            await stock.save();
-          } else {
-            // If no stock entry exists, create a new one
-            stock = new stockModel({
-              productId: id,
-              warehouseId: updatedItem.whareid,
-              quantity: updatedItem.stockqty,
-              sellerid: sellerId
-            });
-            await stock.save();
-          }
-        }
+        // if (updatedItem.stockqty !== undefined && updatedItem.stockqty > 0) {
+        //   let stock = await stockModel.findOne({ productId: id, warehouseId: updatedItem.whareid, sellerid: sellerId });
+        //   if (stock) {
+        //     stock.quantity += parseInt(updatedItem.stockqty);
+        //     await stock.save();
+        //   } else {
+        //     // If no stock entry exists, create a new one
+        //     stock = new stockModel({
+        //       productId: id,
+        //       warehouseId: updatedItem.whareid,
+        //       quantity: updatedItem.stockqty,
+        //       sellerid: sellerId
+        //     });
+        //     await stock.save();
+        //   }
+        // }
         const updatedItemResult = await itemsModel.findByIdAndUpdate(
           id,
           { $set: updatedItem },
@@ -3591,7 +3644,7 @@ const resolvers = {
       if (!userId) {
         throw new Error("You must be logged in");
       }
-     //console.log(role);
+      //console.log(role);
       if (role === 'subuser') {
         throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
@@ -3609,60 +3662,60 @@ const resolvers = {
       if (!userId) {
         throw new Error("You must be logged in");
       }
-     //console.log(role);
+      //console.log(role);
       if (role === 'subuser') {
         throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
-    
+
       try {
         // Find the bill sale to be deleted
         const billSale = await billWasteModel.findById(id);
         if (!billSale) {
           throw new Error("Bill sale not found");
         }
-       // Delete the bill sale
+        // Delete the bill sale
         await billWasteModel.findByIdAndDelete(id);
         // Restore stock for each item in the deleted bill sale
         for (const item of billSale.wastecart) {
           const { id: productId, quantity } = item; // Changed 'id' to 'productId'
-    
+
           // Find the stock entry for the warehouse and product
           let stock = await stockModel.findOne({ productId, warehouseId: billSale.whareid }); // Changed 'id' to 'productId'
-    
+
           if (stock) {
             // If stock entry exists, update the quantity
             stock.quantity += quantity;
             await stock.save(); // Moved the save operation inside the if block
           }
         }
-   
-       
-    
+
+
+
         return "Bill waste deleted successfully";
       } catch (error) {
         throw new Error(`Error deleting bill sale: ${error.message}`);
       }
-    }, 
+    },
     createBillWaste: async (_, { CreateWasteSale }, context) => {
       const { userId, sellerId } = context;
       if (!userId) {
         throw new Error("You must be logged in");
       }
-    
+
       const {
         billdate, whareid, custid, discount, saletax, shippingcharges,
         totalamount, billstatus, paymentstatus, paymentMode, cashreceived, receivedamount,
         notes, invoiceNumberfbr, wastecart, customerName, mobileNumber, deliveryAddress,
-        riderName, riderid, waiterName, waiterid, tableName, tabileid,chefid, orderType,kitchenid
+        riderName, riderid, waiterName, waiterid, tableName, tabileid, chefid, orderType, kitchenid
       } = CreateWasteSale;
-    
+
       // Check if the required fields are provided
-      if (!billdate || !whareid  ) {
+      if (!billdate || !whareid) {
         throw new Error("billdate, whareid, custid are required fields");
       }
-    
-     
-      
+
+
+
       try {
         // Create a new bill sale instance
         const newBillSale = new billWasteModel({
@@ -3697,21 +3750,21 @@ const resolvers = {
           userid: userId,
           sellerid: sellerId, // Assign the sellerid obtained from the user
         });
-    
+
         // Save the new bill sale
         const savedBillSale = await newBillSale.save();
-    
+
         if (!savedBillSale) {
           throw new Error("Failed to create bill sale");
         }
-    
+
         // Update stock levels for each item in salecart
         for (const item of wastecart) {
           const { id, quantity } = item;
-    
+
           // Find or create stock entry for the warehouse and product
           let stock = await stockModel.findOne({ productId: id, warehouseId: whareid });
-    
+
           if (!stock) {
             // If no stock entry exists, create a new one
             stock = new stockModel({ productId: id, warehouseId: whareid, quantity: -quantity, sellerid: sellerId });
@@ -3719,14 +3772,14 @@ const resolvers = {
             // If stock entry exists, update the quantity
             stock.quantity -= quantity;
           }
-    
+
           // Save the updated or new stock entry
           await stock.save();
         }
-        
+
         // Fetch and populate referenced documents for whareid and custid
         const populatedBillSale = await billWasteModel.findById(savedBillSale._id).populate('whareid');
-    
+
         return {
           ...populatedBillSale._doc,
           createdAt: populatedBillSale.createdAt.toISOString(),
@@ -3734,29 +3787,29 @@ const resolvers = {
       } catch (error) {
         throw new Error(`Error creating bill sale: ${error.message}`);
       }
-    }, 
+    },
     createBillSale: async (_, { CreateBillSale }, context) => {
       const { userId, sellerId } = context;
       if (!userId) {
         throw new Error("You must be logged in");
       }
-    
+
       const {
         billdate, whareid, custid, discount, saletax, shippingcharges,
         totalamount, billstatus, paymentstatus, paymentMode, cashreceived, receivedamount,
         notes, invoiceNumberfbr, salecart, customerName, mobileNumber, deliveryAddress,
-        riderName, riderid, waiterName, waiterid, tableName, tabileid,chefid, orderType,kitchenid
+        riderName, riderid, waiterName, waiterid, tableName, tabileid, chefid, orderType, kitchenid
       } = CreateBillSale;
-    
+
       // Check if the required fields are provided
-      if (!billdate || !whareid || !custid ) {
+      if (!billdate || !whareid || !custid) {
         throw new Error("billdate, whareid, custid are required fields");
       }
-    
+
       // Find the maximum saleid in the database
       //const maxItem = await billSaleModel.findOne({}, { saleid: 1 }).sort({ 'saleid': -1 });
       //let newCode = maxItem && maxItem.saleid ? parseInt(maxItem.saleid) + 1 : 1;
-      
+
       try {
         // Create a new bill sale instance
         const newBillSale = new billSaleModel({
@@ -3790,42 +3843,43 @@ const resolvers = {
           userid: userId,
           sellerid: sellerId, // Assign the sellerid obtained from the user
         });
-    
+
         // Save the new bill sale
         const savedBillSale = await newBillSale.save();
-    
+
         if (!savedBillSale) {
           throw new Error("Failed to create bill sale");
         }
-    
-        // Update stock levels for each item in salecart
-        for (const item of salecart) {
-          const { id, quantity } = item;
-    
-          // Find or create stock entry for the warehouse and product
-          let stock = await stockModel.findOne({ productId: id, warehouseId: whareid });
-    
-          if (!stock) {
-            // If no stock entry exists, create a new one
-            stock = new stockModel({ productId: id, warehouseId: whareid, quantity: -quantity, sellerid: sellerId });
-          } else {
-            // If stock entry exists, update the quantity
-            stock.quantity -= quantity;
+        if (billstatus !== "ordered") {
+          // Update stock levels for each item in salecart
+          for (const item of salecart) {
+            const { id, quantity } = item;
+
+            // Find or create stock entry for the warehouse and product
+            let stock = await stockModel.findOne({ productId: id, warehouseId: whareid });
+
+            if (!stock) {
+              // If no stock entry exists, create a new one
+              stock = new stockModel({ productId: id, warehouseId: whareid, quantity: -quantity, sellerid: sellerId });
+            } else {
+              // If stock entry exists, update the quantity
+              stock.quantity -= quantity;
+            }
+
+            // Save the updated or new stock entry
+            await stock.save();
           }
-    
-          // Save the updated or new stock entry
-          await stock.save();
         }
         if (tabileid) {
           if (billstatus === "ordered") {
-              await tableModel.findByIdAndUpdate(tabileid, { reserved: true });
+            await tableModel.findByIdAndUpdate(tabileid, { reserved: true });
           } else {
-              await tableModel.findByIdAndUpdate(tabileid, { reserved: false });
+            await tableModel.findByIdAndUpdate(tabileid, { reserved: false });
           }
-         }
+        }
         // Fetch and populate referenced documents for whareid and custid
         const populatedBillSale = await billSaleModel.findById(savedBillSale._id).populate('whareid').populate('custid');
-    
+
         return {
           ...populatedBillSale._doc,
           createdAt: populatedBillSale.createdAt.toISOString(),
@@ -3833,7 +3887,7 @@ const resolvers = {
       } catch (error) {
         throw new Error(`Error creating bill sale: ${error.message}`);
       }
-    },        
+    },
     updateBillSale: async (_, { id, UpdateBillSale }, context) => {
       try {
         const { userId, sellerId } = context;
@@ -3844,132 +3898,152 @@ const resolvers = {
           billdate, whareid, custid, discount, saletax, shippingcharges,
           totalamount, billstatus, paymentstatus, paymentMode, cashreceived, receivedamount,
           notes, invoiceNumberfbr, salecart, customerName, mobileNumber, deliveryAddress,
-          riderName, riderid, waiterName, waiterid, tableName, tabileid,chefid, orderType,kitchenid
+          riderName, riderid, waiterName, waiterid, tableName, tabileid, chefid, orderType, kitchenid
         } = UpdateBillSale;
+
+
+
         const previousBillSale = await billSaleModel.findById(id);
-    
+
         if (!previousBillSale) {
           throw new Error("Bill sale not found");
         }
-    
-        // Update stock based on the previous sale cart
-        for (const item of previousBillSale.salecart) {
-          const { id: productId, quantity: previousQuantity } = item;
-          let stock = await stockModel.findOne({ productId, warehouseId: previousBillSale.whareid }); // Fix: use previousBillSale.whareid
-          if (stock) {
-            stock.quantity += previousQuantity;
-            await stock.save();
+        // Check if the previous bill status is not 'ordered' and the new bill status is trying to set to 'ordered'
+        if (previousBillSale.billstatus !== "ordered" && billstatus === "ordered") {
+          throw new Error("You cannot change the bill status back to 'order' once it has been changed.");
+        }
+        if (billstatus !== "ordered") {
+          // Update stock based on the previous sale cart
+          for (const item of previousBillSale.salecart) {
+            const { id: productId, quantity: previousQuantity } = item;
+            let stock = await stockModel.findOne({ productId, warehouseId: previousBillSale.whareid }); // Fix: use previousBillSale.whareid
+            if (stock) {
+              stock.quantity += previousQuantity;
+              await stock.save();
+            }
           }
         }
-    
+
         // Update the bill sale
         const updatedBillSale = await billSaleModel
           .findByIdAndUpdate(id, { $set: UpdateBillSale }, { new: true })
           .populate('whareid', '_id name')
           .populate('custid', '_id name phoneNumber');
-    
-        // Calculate and update stock changes based on the updated sale cart
-        for (const item of salecart) {
-          const { id, quantity } = item;
-          let stock = await stockModel.findOne({ productId: id, warehouseId: whareid });
-          if (!stock) {
-            stock = new stockModel({ productId: id, warehouseId: whareid, quantity: -quantity, sellerid: sellerId });
-          } else {
-            stock.quantity -= quantity;
+        if (billstatus !== "ordered") {
+          // Calculate and update stock changes based on the updated sale cart
+          for (const item of salecart) {
+            const { id, quantity } = item;
+            let stock = await stockModel.findOne({ productId: id, warehouseId: whareid });
+            if (!stock) {
+              stock = new stockModel({ productId: id, warehouseId: whareid, quantity: -quantity, sellerid: sellerId });
+            } else {
+              stock.quantity -= quantity;
+            }
+            await stock.save();
           }
-          await stock.save();
         }
         if (tabileid) {
           if (billstatus === "ordered") {
-              await tableModel.findByIdAndUpdate(tabileid, { reserved: true });
+            await tableModel.findByIdAndUpdate(tabileid, { reserved: true });
           } else {
-              await tableModel.findByIdAndUpdate(tabileid, { reserved: false });
+            await tableModel.findByIdAndUpdate(tabileid, { reserved: false });
           }
-         }
+        }
         return updatedBillSale;
       } catch (error) {
         throw new Error(`Error updating bill sale: ${error.message}`);
       }
-    },       
+    },
     updateBillSaleCash: async (_, { id, cashReceived }, context) => {
       try {
         const { userId } = context;
         if (!userId) {
           throw new Error("You must be logged in");
         }
-
-        // Find the BillPurchase by ID
-        const billPurchase = await billSaleModel.findById(id);
-
-        if (!billPurchase) {
-          throw new Error("BillPurchase not found");
+    
+        // Find the BillSale by ID
+        const billSale = await billSaleModel.findById(id);
+    
+        if (!billSale) {
+          throw new Error("BillSale not found");
         }
-
-        // Calculate the difference between the total amount and the previous cash received
-        const previousCashReceived = billPurchase.cashreceived || 0;
-        const totalAmount = billPurchase.totalamount || 0;
+    
+        // Calculate the previous cash received and remaining amount
+        const previousCashReceived = billSale.cashreceived || 0;
+        const totalAmount = billSale.totalamount || 0;
         const remainingAmount = totalAmount - previousCashReceived;
-
+    
         // Update the cashReceived field
         const updatedCashReceived = previousCashReceived + cashReceived;
         if (updatedCashReceived > totalAmount) {
           throw new Error("Cash received cannot exceed the remaining amount");
         }
-
-        // Find the BillPurchase by ID and update the cashReceived field
-        const updatedBillPurchase = await billSaleModel.findByIdAndUpdate(
+    
+        // Determine the new payment status
+        let paymentStatus = billSale.paymentstatus;
+        if (updatedCashReceived === totalAmount) {
+          paymentStatus = 'paid';  // Mark as fully paid
+        }
+    
+        // Update the cashReceived and paymentStatus fields
+        const updatedBillSale = await billSaleModel.findByIdAndUpdate(
           id,
-          { cashreceived: updatedCashReceived },
+          {
+            cashreceived: updatedCashReceived,
+            paymentstatus: paymentStatus  // Update the payment status if fully paid
+          },
           { new: true }
         );
-
+    
         return {
           message: "Cash received updated successfully",
-          //billPurchase: updatedBillPurchase
+          // Optionally return the updated billSale if needed
+          // billSale: updatedBillSale
         };
       } catch (error) {
-        throw new Error("Unable to update cash received for BillPurchase: " + error.message);
+        throw new Error("Unable to update cash received for BillSale: " + error.message);
       }
     },
+    
     deleteBillSale: async (_, { id }, context) => {
       const { userId, role } = context;
       if (!userId) {
         throw new Error("You must be logged in");
       }
-     //console.log(role);
+      //console.log(role);
       if (role === 'subuser') {
         throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
-    
+
       try {
         // Find the bill sale to be deleted
         const billSale = await billSaleModel.findById(id);
         if (!billSale) {
           throw new Error("Bill sale not found");
         }
-       // Delete the bill sale
+        // Delete the bill sale
         await billSaleModel.findByIdAndDelete(id);
         // Restore stock for each item in the deleted bill sale
         for (const item of billSale.salecart) {
           const { id: productId, quantity } = item; // Changed 'id' to 'productId'
-    
+
           // Find the stock entry for the warehouse and product
           let stock = await stockModel.findOne({ productId, warehouseId: billSale.whareid }); // Changed 'id' to 'productId'
-    
+
           if (stock) {
             // If stock entry exists, update the quantity
             stock.quantity += quantity;
             await stock.save(); // Moved the save operation inside the if block
           }
         }
-   
-       
-    
+
+
+
         return "Bill sale deleted successfully";
       } catch (error) {
         throw new Error(`Error deleting bill sale: ${error.message}`);
       }
-    },    
+    },
     createReturnBillSale: async (_, { CreateReturnBillSale }, context) => {
       const { userId, sellerId } = context;
 
@@ -3984,8 +4058,8 @@ const resolvers = {
       if (!billdate || !whareid || !custid) {
         throw new Error("billdate, whareid, and custid are required fields");
       }
-      
-      
+
+
       try {
         // Create a new bill sale model instance
         const newBillSale = new billSaleReturnModel({
@@ -4056,11 +4130,11 @@ const resolvers = {
         }
         const { whareid, returncart } = UpdateReturnBillSale;
         const previousBillSale = await billSaleReturnModel.findById(id);
-    
+
         if (!previousBillSale) {
           throw new Error("Bill sale not found");
         }
-    
+
         // Update stock based on the previous sale cart
         for (const item of previousBillSale.returncart) {
           const { id: productId, quantity: previousQuantity } = item;
@@ -4070,13 +4144,13 @@ const resolvers = {
             await stock.save();
           }
         }
-    
+
         // Update the bill sale
         const updatedReturnBillSale = await billSaleReturnModel
           .findByIdAndUpdate(id, { $set: UpdateReturnBillSale }, { new: true })
           .populate('whareid', '_id name')
           .populate('custid', '_id name phoneNumber');
-    
+
         // Calculate and update stock changes based on the updated sale cart
         for (const item of returncart) {
           const { id, quantity } = item;
@@ -4088,7 +4162,7 @@ const resolvers = {
           }
           await stock.save();
         }
-    
+
         return updatedReturnBillSale;
       } catch (error) {
         throw new Error(`Error updating bill sale: ${error.message}`);
@@ -4100,46 +4174,57 @@ const resolvers = {
         if (!userId) {
           throw new Error("You must be logged in");
         }
-
-        // Find the BillPurchase by ID
-        const billPurchase = await billSaleReturnModel.findById(id);
-
-        if (!billPurchase) {
-          throw new Error("BillPurchase not found");
+    
+        // Find the BillSaleReturn by ID
+        const billSaleReturn = await billSaleReturnModel.findById(id);
+    
+        if (!billSaleReturn) {
+          throw new Error("BillSaleReturn not found");
         }
-
-        // Calculate the difference between the total amount and the previous cash received
-        const previousCashReceived = billPurchase.cashreceived || 0;
-        const totalAmount = billPurchase.totalamount || 0;
+    
+        // Calculate the previous cash received and the remaining amount
+        const previousCashReceived = billSaleReturn.cashreceived || 0;
+        const totalAmount = billSaleReturn.totalamount || 0;
         const remainingAmount = totalAmount - previousCashReceived;
-
+    
         // Update the cashReceived field
         const updatedCashReceived = previousCashReceived + cashReceived;
         if (updatedCashReceived > totalAmount) {
           throw new Error("Cash received cannot exceed the remaining amount");
         }
-
-        // Find the BillPurchase by ID and update the cashReceived field
-        const updatedBillPurchase = await billSaleReturnModel.findByIdAndUpdate(
+    
+        // Determine the new payment status
+        let paymentStatus = billSaleReturn.paymentstatus;
+        if (updatedCashReceived === totalAmount) {
+          paymentStatus = 'paid';  // Mark as fully paid
+        }
+    
+        // Update the cashReceived and paymentStatus fields
+        const updatedBillSaleReturn = await billSaleReturnModel.findByIdAndUpdate(
           id,
-          { cashreceived: updatedCashReceived },
+          {
+            cashreceived: updatedCashReceived,
+            paymentstatus: paymentStatus  // Update the payment status if fully paid
+          },
           { new: true }
         );
-
+    
         return {
           message: "Cash received updated successfully",
-          //billPurchase: updatedBillPurchase
+          // Optionally return the updated billSaleReturn if needed
+          // billSaleReturn: updatedBillSaleReturn
         };
       } catch (error) {
-        throw new Error("Unable to update cash received for BillPurchase: " + error.message);
+        throw new Error("Unable to update cash received for BillSaleReturn: " + error.message);
       }
     },
+    
     deleteReturnBillSale: async (_, { id }, context) => {
       const { userId, role } = context;
       if (!userId) {
         throw new Error("You must be logged in");
       }
-     //console.log(role);
+      //console.log(role);
       if (role === 'subuser') {
         throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
@@ -4194,11 +4279,11 @@ const resolvers = {
           throw new Error("billdate, whareid, and custid are required fields");
         }
 
-      
+
 
         const newBillPurchase = new billPurchaseModel({
           billdate,
-       
+
           whareid,
           custid,
           discount,
@@ -4278,11 +4363,11 @@ const resolvers = {
         }
         const { whareid, purchasecart } = input;
         const previousBillSale = await billPurchaseModel.findById(id);
-    
+
         if (!previousBillSale) {
           throw new Error("Bill sale not found");
         }
-    
+
         // Update stock based on the previous sale cart
         for (const item of previousBillSale.purchasecart) {
           const { id: productId, quantity: previousQuantity } = item;
@@ -4292,13 +4377,13 @@ const resolvers = {
             await stock.save();
           }
         }
-    
+
         // Update the bill sale
         const updatedBillPurchase = await billPurchaseModel
           .findByIdAndUpdate(id, { $set: input }, { new: true })
           .populate('whareid', '_id name')
           .populate('custid', '_id name phoneNumber');
-    
+
         // Calculate and update stock changes based on the updated sale cart
         for (const item of purchasecart) {
           const { id, quantity } = item;
@@ -4310,7 +4395,7 @@ const resolvers = {
           }
           await stock.save();
         }
-      // Update the cost of items in itemsModel based on purchasecart price
+        // Update the cost of items in itemsModel based on purchasecart price
         for (const item of purchasecart) {
           const { id, price } = item;
           const itemToUpdate = await itemsModel.findById(id);
@@ -4323,7 +4408,7 @@ const resolvers = {
           await itemToUpdate.save();
         }
 
-    return updatedBillPurchase;
+        return updatedBillPurchase;
       } catch (error) {
         throw new Error(`Error updating bill purchase: ${error.message}`);
       }
@@ -4334,46 +4419,56 @@ const resolvers = {
         if (!userId) {
           throw new Error("You must be logged in");
         }
-
+    
         // Find the BillPurchase by ID
         const billPurchase = await billPurchaseModel.findById(id);
-
         if (!billPurchase) {
           throw new Error("BillPurchase not found");
         }
-
-        // Calculate the difference between the total amount and the previous cash received
+    
+        // Calculate the previous cash received and remaining amount
         const previousCashReceived = billPurchase.cashreceived || 0;
         const totalAmount = billPurchase.totalamount || 0;
         const remainingAmount = totalAmount - previousCashReceived;
-
+    
         // Update the cashReceived field
         const updatedCashReceived = previousCashReceived + cashReceived;
         if (updatedCashReceived > totalAmount) {
           throw new Error("Cash received cannot exceed the remaining amount");
         }
-
-        // Find the BillPurchase by ID and update the cashReceived field
+    
+        // Determine the new payment status
+        let paymentStatus = billPurchase.paymentstatus;
+        if (updatedCashReceived === totalAmount) {
+          paymentStatus = 'paid';  // Mark as fully paid
+        }
+    
+        // Update the cashReceived and paymentStatus fields
         const updatedBillPurchase = await billPurchaseModel.findByIdAndUpdate(
           id,
-          { cashreceived: updatedCashReceived },
+          { 
+            cashreceived: updatedCashReceived,
+            paymentstatus: paymentStatus  // Update the payment status if fully paid
+          },
           { new: true }
         );
-
+    
         return {
           message: "Cash received updated successfully",
-          //billPurchase: updatedBillPurchase
+          // Optionally return the updated billPurchase if needed
+          // billPurchase: updatedBillPurchase
         };
       } catch (error) {
         throw new Error("Unable to update cash received for BillPurchase: " + error.message);
       }
     },
+    
     deleteBillPurchase: async (_, { id }, context) => {
       const { userId, role } = context;
       if (!userId) {
         throw new Error("You must be logged in");
       }
-     //console.log(role);
+      //console.log(role);
       if (role === 'subuser') {
         throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
@@ -4401,7 +4496,7 @@ const resolvers = {
           // Save the updated or new stock entry
           await stock.save();
         }
-       
+
         // console.log("Stocks updated successfully");
 
         return "Bill purchase deleted successfully";
@@ -4422,8 +4517,8 @@ const resolvers = {
       if (!billdate || !whareid || !custid) {
         throw new Error("billdate, whareid, and custid are required fields");
       }
-     
-   
+
+
       try {
         const newBillPurchasereturn = new billPurchaseReturnModel({
           billdate,
@@ -4493,11 +4588,11 @@ const resolvers = {
         }
         const { whareid, purreturncart } = input;
         const previousBillPurchaseReturn = await billPurchaseReturnModel.findById(id);
-    
+
         if (!previousBillPurchaseReturn) {
           throw new Error("Bill purchase return not found");
         }
-    
+
         // Update stock based on the previous purchase return cart
         for (const item of previousBillPurchaseReturn.purreturncart) {
           const { id: productId, quantity: previousQuantity } = item;
@@ -4507,76 +4602,87 @@ const resolvers = {
             await stock.save();
           }
         }
-    
+
         // Update the bill purchase return
         const updatedBillPurchaseReturn = await billPurchaseReturnModel
           .findByIdAndUpdate(id, { $set: input }, { new: true })
           .populate('whareid', '_id name')
           .populate('custid', '_id name phoneNumber');
-    
+
         // Calculate and update stock changes based on the updated purchase return cart
         for (const item of purreturncart) {
           const { id, quantity } = item;
-          let stock = await stockModel.findOne({ productId: id, warehouseId:whareid});
+          let stock = await stockModel.findOne({ productId: id, warehouseId: whareid });
           if (!stock) {
-            stock = new stockModel({ productId: id, warehouseId:whareid, quantity: -quantity, sellerid: sellerId });
+            stock = new stockModel({ productId: id, warehouseId: whareid, quantity: -quantity, sellerid: sellerId });
           } else {
             stock.quantity -= quantity;
           }
           await stock.save();
         }
-    
+
         return updatedBillPurchaseReturn;
       } catch (error) {
         throw new Error(`Error updating bill purchase return: ${error.message}`);
       }
-    },    
+    },
     updateBillPurchaseReturnCash: async (_, { id, cashReceived }, context) => {
       try {
         const { userId } = context;
         if (!userId) {
           throw new Error("You must be logged in");
         }
-
-        // Find the BillPurchase by ID
+    
+        // Find the BillPurchaseReturn by ID
         const billPurchase = await billPurchaseReturnModel.findById(id);
-
+    
         if (!billPurchase) {
-          throw new Error("BillPurchase not found");
+          throw new Error("BillPurchaseReturn not found");
         }
-
-        // Calculate the difference between the total amount and the previous cash received
+    
+        // Calculate the previous cash received and remaining amount
         const previousCashReceived = billPurchase.cashreceived || 0;
         const totalAmount = billPurchase.totalamount || 0;
         const remainingAmount = totalAmount - previousCashReceived;
-
+    
         // Update the cashReceived field
         const updatedCashReceived = previousCashReceived + cashReceived;
         if (updatedCashReceived > totalAmount) {
           throw new Error("Cash received cannot exceed the remaining amount");
         }
-
-        // Find the BillPurchase by ID and update the cashReceived field
+    
+        // Determine the new payment status
+        let paymentStatus = billPurchase.paymentstatus;
+        if (updatedCashReceived === totalAmount) {
+          paymentStatus = 'paid';  // Mark as fully paid
+        }
+    
+        // Update the cashReceived and paymentStatus fields
         const updatedBillPurchase = await billPurchaseReturnModel.findByIdAndUpdate(
           id,
-          { cashreceived: updatedCashReceived },
+          { 
+            cashreceived: updatedCashReceived,
+            paymentstatus: paymentStatus  // Update the payment status if fully paid
+          },
           { new: true }
         );
-
+    
         return {
           message: "Cash received updated successfully",
-          //billPurchase: updatedBillPurchase
+          // Optionally return the updated billPurchase if needed
+          // billPurchase: updatedBillPurchase
         };
       } catch (error) {
-        throw new Error("Unable to update cash received for BillPurchase: " + error.message);
+        throw new Error("Unable to update cash received for BillPurchaseReturn: " + error.message);
       }
     },
+    
     deleteBillPurchaseReturn: async (_, { id }, context) => {
       const { userId, role } = context;
       if (!userId) {
         throw new Error("You must be logged in");
       }
-     //console.log(role);
+      //console.log(role);
       if (role === 'subuser') {
         throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
@@ -4587,9 +4693,9 @@ const resolvers = {
         if (!billPurchaseReturn) {
           throw new Error("Bill purchase return not found");
         }
-      // Delete the bill purchase return
-      await billPurchaseReturnModel.findByIdAndDelete(id);
-            
+        // Delete the bill purchase return
+        await billPurchaseReturnModel.findByIdAndDelete(id);
+
         // Restore stock for each item in the deleted bill purchase return
         for (const item of billPurchaseReturn.purreturncart) {
           const { id, quantity } = item;
@@ -4605,7 +4711,7 @@ const resolvers = {
           // Save the updated or new stock entry
           await stock.save();
         }
-       
+
 
         // console.log("Stocks updated successfully");
 
@@ -4626,13 +4732,13 @@ const resolvers = {
       if (!billdate || !whareid || !custid) {
         throw new Error("billdate, whareid, and custid are required fields");
       }
-     
-     
-    
+
+
+
       try {
         const newBillQuotation = new billOrdersModel({
           billdate,
-        
+
           whareid: whareid,
           custid: custid,
           discount,
@@ -4666,7 +4772,7 @@ const resolvers = {
       if (!userId) {
         throw new Error("You must be logged in");
       }
-     //console.log(role);
+      //console.log(role);
       if (role === 'subuser') {
         throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
@@ -4680,19 +4786,19 @@ const resolvers = {
       if (!userId) {
         throw new Error("You must be logged in");
       }
-    
+
       // Destructure all properties from input
       const { billdate, whareid, custid, discount, saletax, shippingcharges, totalamount, cashreceived, billstatus, paymentstatus, paymentMode, notes, transfercart } = input;
-    
+
       // Check if the required fields are provided 
       if (!billdate || !whareid || !custid) {
         throw new Error("billdate, whareid, and custid are required fields");
       }
-    
+
       try {
         const newBilltransfer = new billTransfersModel({
           billdate,
-         
+
           whareid: whareid,
           custid: custid,
           discount,
@@ -4708,14 +4814,14 @@ const resolvers = {
           userid: userId,
           sellerid: sellerId, // Assign the sellerid obtained from the user
         });
-    
+
         // Save the new bill purchase
         const savedBilltransfer = await newBilltransfer.save();
-    
+
         // Update stock for each item in the transfercart
         for (const item of transfercart) {
           const { id: productId, quantity } = item;
-    
+
           // Deduct the transferred quantity from the source warehouse
           let sourceStock = await stockModel.findOne({ productId, warehouseId: whareid });
           if (!sourceStock) {
@@ -4726,9 +4832,9 @@ const resolvers = {
             sourceStock.quantity -= quantity;
           }
 
-            await sourceStock.save();
-        
-    
+          await sourceStock.save();
+
+
           // Update or create the destination stock
           let destinationStock = await stockModel.findOne({ productId, warehouseId: custid });
           if (!destinationStock) {
@@ -4740,9 +4846,9 @@ const resolvers = {
           }
           await destinationStock.save();
         }
-    
+
         const populatedBilltransfer = await billTransfersModel.findById(savedBilltransfer._id).populate('whareid').populate('custid');
-    
+
         return {
           ...populatedBilltransfer._doc,
           createdAt: populatedBilltransfer.createdAt.toISOString(),
@@ -4750,38 +4856,38 @@ const resolvers = {
       } catch (error) {
         throw new Error(`Error creating bill Transfer: ${error.message}`);
       }
-    },    
+    },
     deleteBillTransfer: async (_, { id }, context) => {
       const { userId, role } = context;
       if (!userId) {
         throw new Error("You must be logged in");
       }
-     //console.log(role);
+      //console.log(role);
       if (role === 'subuser') {
         throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
-    
+
       try {
         // Find the bill transfer to be deleted
         const billTransfer = await billTransfersModel.findById(id);
         if (!billTransfer) {
           throw new Error("Bill transfer not found");
         }
-    
+
         // Delete the bill transfer
         await billTransfersModel.findByIdAndDelete(id);
-    
+
         // Reverse the stock transfer for each item in the transfer cart
         for (const item of billTransfer.transfercart) {
           const { id: productId, quantity } = item;
-    
+
           // Deduct the transferred quantity from the source warehouse
           let sourceStock = await stockModel.findOne({ productId, warehouseId: billTransfer.whareid });
           if (sourceStock) {
             sourceStock.quantity += quantity;
             await sourceStock.save();
           }
-    
+
           // Add the transferred quantity to the destination warehouse
           let destinationStock = await stockModel.findOne({ productId, warehouseId: billTransfer.custid });
           if (destinationStock) {
@@ -4790,94 +4896,94 @@ const resolvers = {
             await destinationStock.save();
           }
         }
-    
+
         return "Bill Transfer deleted successfully";
       } catch (error) {
         throw new Error(`Error deleting bill transfer: ${error.message}`);
       }
     },
     createBillAdjustment: async (_, { input }, context) => {
-        const { userId, sellerId } = context;
-        if (!userId) {
-          throw new Error("You must be logged in");
-        }
+      const { userId, sellerId } = context;
+      if (!userId) {
+        throw new Error("You must be logged in");
+      }
 
-        // Destructure all properties from input
-        const { billdate, whareid, custid, discount, saletax, shippingcharges, totalamount, billstatus, cashreceived, paymentstatus, paymentMode, notes, adjustcart } = input;
+      // Destructure all properties from input
+      const { billdate, whareid, custid, discount, saletax, shippingcharges, totalamount, billstatus, cashreceived, paymentstatus, paymentMode, notes, adjustcart } = input;
 
-        // Check if the required fields are provided 
-        if (!billdate || !whareid) {
-          throw new Error("billdate and whareid are required fields");
-        }
+      // Check if the required fields are provided 
+      if (!billdate || !whareid) {
+        throw new Error("billdate and whareid are required fields");
+      }
 
-        try {
-       
-    
-          // Create a new bill adjustment
-          const newBillAdjustment = new billAdjustmentsModel({
-            billdate,
-         
-            whareid,
-            custid,
-            discount,
-            cashreceived,
-            saletax,
-            shippingcharges,
-            totalamount,
-            billstatus,
-            paymentstatus,
-            paymentMode,
-            notes,
-            adjustcart,
-            userid: userId,
-            sellerid: sellerId,
-          });
+      try {
 
-          // Save the new bill adjustment
-          const savedBillAdjustment = await newBillAdjustment.save();
 
-          // Update stock based on adjustment type in adjustcart
-            for (const item of adjustcart) {
-              const { id, quantity, adjusttype } = item;
+        // Create a new bill adjustment
+        const newBillAdjustment = new billAdjustmentsModel({
+          billdate,
 
-              // Find the stock entry for the product in the warehouse
-              let stock = await stockModel.findOne({ productId: id, warehouseId: whareid });
-              if (!stock) {
-                // If stock entry doesn't exist, create a new one
-                stock = new stockModel({ productId: id, warehouseId: whareid, quantity, sellerid: sellerId });
-              } else {
-                // Adjust stock based on adjustment type
-                if (adjusttype === "addition") {
-                  stock.quantity += quantity;
-                } else if (adjusttype === "subtraction") {
-                  stock.quantity -= quantity;
-                } else {
-                  throw new Error(`Invalid adjustment type for product ${id}`);
-                }
-              }
+          whareid,
+          custid,
+          discount,
+          cashreceived,
+          saletax,
+          shippingcharges,
+          totalamount,
+          billstatus,
+          paymentstatus,
+          paymentMode,
+          notes,
+          adjustcart,
+          userid: userId,
+          sellerid: sellerId,
+        });
 
-              // Save the updated stock
-              await stock.save();
+        // Save the new bill adjustment
+        const savedBillAdjustment = await newBillAdjustment.save();
+
+        // Update stock based on adjustment type in adjustcart
+        for (const item of adjustcart) {
+          const { id, quantity, adjusttype } = item;
+
+          // Find the stock entry for the product in the warehouse
+          let stock = await stockModel.findOne({ productId: id, warehouseId: whareid });
+          if (!stock) {
+            // If stock entry doesn't exist, create a new one
+            stock = new stockModel({ productId: id, warehouseId: whareid, quantity, sellerid: sellerId });
+          } else {
+            // Adjust stock based on adjustment type
+            if (adjusttype === "addition") {
+              stock.quantity += quantity;
+            } else if (adjusttype === "subtraction") {
+              stock.quantity -= quantity;
+            } else {
+              throw new Error(`Invalid adjustment type for product ${id}`);
             }
+          }
 
-
-          // Populate and return the created bill adjustment
-          const populatedBillAdjustment = await billAdjustmentsModel.findById(savedBillAdjustment._id).populate('whareid');
-
-          return {
-            ...populatedBillAdjustment._doc,
-            createdAt: populatedBillAdjustment.createdAt.toISOString(),
-          };
-        } catch (error) {
-          throw new Error(`Error creating bill adjustment: ${error.message}`);
+          // Save the updated stock
+          await stock.save();
         }
+
+
+        // Populate and return the created bill adjustment
+        const populatedBillAdjustment = await billAdjustmentsModel.findById(savedBillAdjustment._id).populate('whareid');
+
+        return {
+          ...populatedBillAdjustment._doc,
+          createdAt: populatedBillAdjustment.createdAt.toISOString(),
+        };
+      } catch (error) {
+        throw new Error(`Error creating bill adjustment: ${error.message}`);
+      }
     },
     deleteBillAdjustment: async (_, { id }, context) => {
       const { userId, role } = context;
       if (!userId) {
         throw new Error("You must be logged in");
       }
-     //console.log(role);
+      //console.log(role);
       if (role === 'subuser') {
         throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
@@ -4914,7 +5020,7 @@ const resolvers = {
           await stock.save();
         }
 
-       
+
         return "Bill Adjustment deleted successfully";
       } catch (error) {
         throw new Error(`Error deleting bill adjustment: ${error.message}`);
@@ -4960,7 +5066,7 @@ const resolvers = {
       if (!userId) {
         throw new Error("You must be logged in");
       }
-     //console.log(role);
+      //console.log(role);
       if (role === 'subuser') {
         throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
@@ -4974,7 +5080,7 @@ const resolvers = {
       if (!userId) {
         throw new Error("You must be logged in");
       }
-     //console.log(role);
+      //console.log(role);
       if (role === 'subuser') {
         throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
@@ -5071,7 +5177,7 @@ const resolvers = {
       }
 
       try {
-        const newExpenseEntry = new ExpenseEntryModel({
+        const newExpenseEntry = new expenseEntryModel({
           date,
           notes,
           wareid,
@@ -5098,7 +5204,7 @@ const resolvers = {
           throw new Error("You must be logged in");
         }
 
-        const updatedExpenseEntryResult = await ExpenseEntryModel.findByIdAndUpdate(
+        const updatedExpenseEntryResult = await expenseEntryModel.findByIdAndUpdate(
           id,
           { $set: input },
           { new: true }
@@ -5114,12 +5220,12 @@ const resolvers = {
       if (!userId) {
         throw new Error("You must be logged in");
       }
-     //console.log(role);
+      //console.log(role);
       if (role === 'subuser') {
         throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
 
-      await ExpenseEntryModel.findByIdAndDelete(id);
+      await expenseEntryModel.findByIdAndDelete(id);
 
       return 'Expense entry deleted successfully';
     },
@@ -5130,7 +5236,7 @@ const resolvers = {
       }
 
       // Destructure properties from input
-      let { name, email, phoneNumber, country, city, address,partytype, acctype } = input;
+      let { name, email, phoneNumber, country, city, address, partytype,openingbalance, acctype } = input;
 
       // Check if required fields are provided
       if (!name || !phoneNumber) {
@@ -5160,6 +5266,7 @@ const resolvers = {
           country,
           city,
           address,
+          openingbalance,
           partytype,
           acctype: acctype || 'customers', // Set default value if not provided
           userid: userId,
@@ -5217,7 +5324,7 @@ const resolvers = {
       if (!userId) {
         throw new Error("You must be logged in");
       }
-     //console.log(role);
+      //console.log(role);
       if (role === 'subuser') {
         throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
@@ -5304,34 +5411,34 @@ const resolvers = {
         if (!userId) {
           throw new Error("You must be logged in");
         }
-    
+
         const { name, description, categoryIds } = input;
-    
+
         // Check if kitchen name is being updated and whether it already exists
         const lowerCaseName = name ? name.toLowerCase() : null;
         const existingKitchen = lowerCaseName ? await kitchenModel.findOne({ name: { $regex: new RegExp('^' + lowerCaseName + '$', 'i') }, sellerid: sellerId }) : null;
-    
+
         if (existingKitchen && existingKitchen._id.toString() !== id) {
           throw new Error('Kitchen with the updated name already exists for this seller.');
         }
-    
+
         // Prepare fields to update
         const updateFields = {};
         if (lowerCaseName) updateFields.name = lowerCaseName;
         if (description) updateFields.description = description;
         if (categoryIds) updateFields.categoryIds = categoryIds;  // Update categories
-    
+
         // Perform the update
         const updatedKitchen = await kitchenModel.findByIdAndUpdate(
           id,
           updateFields,
           { new: true }
         );
-    
+
         if (!updatedKitchen) {
           throw new Error("Kitchen not found");
         }
-    
+
         return updatedKitchen;
       } catch (error) {
         console.error("Error updating kitchen:", error);
@@ -5344,7 +5451,7 @@ const resolvers = {
         if (!userId) {
           throw new Error("You must be logged in");
         }
-       //console.log(role);
+        //console.log(role);
         if (role === 'subuser') {
           throw new Error("You do not have permission to delete categories. Please contact an admin.");
         }
@@ -5405,10 +5512,10 @@ const resolvers = {
         throw new Error(`Error adding waiter: ${error.message}`);
       }
     },
-    updateWaiter: async (_, { id, input}, context) => {
+    updateWaiter: async (_, { id, input }, context) => {
       try {
         const { userId, sellerId } = context;
-        
+
         if (!userId) {
           throw new Error("You must be logged in");
         }
@@ -5449,13 +5556,13 @@ const resolvers = {
     deleteWaiter: async (_, { id }, context) => {
       try {
         const { userId, role } = context;
-      if (!userId) {
-        throw new Error("You must be logged in");
-      }
-     //console.log(role);
-      if (role === 'subuser') {
-        throw new Error("You do not have permission to delete categories. Please contact an admin.");
-      }
+        if (!userId) {
+          throw new Error("You must be logged in");
+        }
+        //console.log(role);
+        if (role === 'subuser') {
+          throw new Error("You do not have permission to delete categories. Please contact an admin.");
+        }
         const itemCount = await billSaleModel.countDocuments();
 
         if (itemCount > 0) {
@@ -5550,7 +5657,7 @@ const resolvers = {
         if (!userId) {
           throw new Error("You must be logged in");
         }
-       //console.log(role);
+        //console.log(role);
         if (role === 'subuser') {
           throw new Error("You do not have permission to delete categories. Please contact an admin.");
         }
@@ -5652,13 +5759,13 @@ const resolvers = {
     deleteRider: async (_, { id }, context) => {
       try {
         const { userId, role } = context;
-      if (!userId) {
-        throw new Error("You must be logged in");
-      }
-     //console.log(role);
-      if (role === 'subuser') {
-        throw new Error("You do not have permission to delete categories. Please contact an admin.");
-      }
+        if (!userId) {
+          throw new Error("You must be logged in");
+        }
+        //console.log(role);
+        if (role === 'subuser') {
+          throw new Error("You do not have permission to delete categories. Please contact an admin.");
+        }
         const itemCount = await billSaleModel.countDocuments();
 
         if (itemCount > 0) {
@@ -5760,7 +5867,7 @@ const resolvers = {
         if (!userId) {
           throw new Error("You must be logged in");
         }
-       //console.log(role);
+        //console.log(role);
         if (role === 'subuser') {
           throw new Error("You do not have permission to delete categories. Please contact an admin.");
         }
@@ -5777,64 +5884,64 @@ const resolvers = {
       }
     },
     // Function to create production item
-    createProductionItem : async (_, { input }, context) => {
-  try {
-    const { userId, sellerId } = context;
-    const { productId, rawMaterialsUsed, formulaName } = input;
+    createProductionItem: async (_, { input }, context) => {
+      try {
+        const { userId, sellerId } = context;
+        const { productId, rawMaterialsUsed, formulaName } = input;
 
-    if (!userId) {
-      throw new Error("You must be logged in");
-    }
+        if (!userId) {
+          throw new Error("You must be logged in");
+        }
 
-    if (!productId) {
-      throw new Error("Product ID is required");
-    }
+        if (!productId) {
+          throw new Error("Product ID is required");
+        }
 
-    if (!rawMaterialsUsed || rawMaterialsUsed.length === 0) {
-      throw new Error("At least one raw material is required");
-    }
+        if (!rawMaterialsUsed || rawMaterialsUsed.length === 0) {
+          throw new Error("At least one raw material is required");
+        }
 
-    // Check if a production entry with the same productId already exists for the given sellerId
-    const existingProduction = await productionListModel.findOne({ productId });
-    if (existingProduction) {
-      throw new Error('Production with the same Product ID already exists.');
-    }
+        // Check if a production entry with the same productId already exists for the given sellerId
+        const existingProduction = await productionListModel.findOne({ productId });
+        if (existingProduction) {
+          throw new Error('Production with the same Product ID already exists.');
+        }
 
-    const newProduction = new productionListModel({
-      productId,
-      rawMaterialsUsed,
-      formulaName,
-      userid: userId,
-      sellerid: sellerId,
-    });
+        const newProduction = new productionListModel({
+          productId,
+          rawMaterialsUsed,
+          formulaName,
+          userid: userId,
+          sellerid: sellerId,
+        });
 
-    // Save the new production
-    const savedProduction = await newProduction.save();
+        // Save the new production
+        const savedProduction = await newProduction.save();
 
-    // Populate the fields after saving
-    const populatedProduction = await productionListModel
-      .findById(savedProduction._id)
-      .populate('productId', '_id productname')
-      .populate({
-        path: 'rawMaterialsUsed.rawId',
-        select: '_id productname',
-      });
+        // Populate the fields after saving
+        const populatedProduction = await productionListModel
+          .findById(savedProduction._id)
+          .populate('productId', '_id productname')
+          .populate({
+            path: 'rawMaterialsUsed.rawId',
+            select: '_id productname',
+          });
 
-    return {
-      ...populatedProduction._doc,
-      createdAt: populatedProduction.createdAt.toISOString(),
-    };
-  } catch (error) {
-    console.error("Error adding production:", error);
-    throw new Error(`Error adding production: ${error.message}`);
-  }
+        return {
+          ...populatedProduction._doc,
+          createdAt: populatedProduction.createdAt.toISOString(),
+        };
+      } catch (error) {
+        console.error("Error adding production:", error);
+        throw new Error(`Error adding production: ${error.message}`);
+      }
     },
     deleteproductionList: async (_, args, context) => {
       const { userId, role } = context;
       if (!userId) {
         throw new Error("You must be logged in");
       }
-     //console.log(role);
+      //console.log(role);
       if (role === 'subuser') {
         throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
@@ -5851,11 +5958,11 @@ const resolvers = {
       try {
         const { userId, sellerId } = context;
         const { prodcart, whareid, formulaName } = input;
-    
+
         if (!userId) {
           throw new Error("You must be logged in");
         }
-    
+
         // Create new production entry
         const newProduction = new productionModel({
           prodcart,
@@ -5864,10 +5971,10 @@ const resolvers = {
           userid: userId,
           sellerid: sellerId,
         });
-    
+
         // Save the new production entry
         const savedProduction = await newProduction.save();
-    
+
         // Populate productId within each prodCart
         const populatedProduction = await productionModel
           .findById(savedProduction._id)
@@ -5876,23 +5983,23 @@ const resolvers = {
             select: '_id productname',
           })
           .exec();
-    
+
         // Loop through each prodcart item
         for (const item of prodcart) {
           const { productId, qty } = item;
-    
+
           // Find or create stock entry for the product
           let stock = await stockModel.findOne({ productId, warehouseId: whareid });
-    
+
           if (!stock) {
             stock = new stockModel({ productId, warehouseId: whareid, quantity: qty, sellerid: sellerId });
           } else {
             stock.quantity += qty;
           }
-    
+
           // Save stock changes
           await stock.save();
-    
+
           // Fetch product data to calculate total cost
           const productData = await productionListModel
             .findOne({ productId })
@@ -5901,28 +6008,28 @@ const resolvers = {
               path: 'rawMaterialsUsed.rawId',
               select: '_id productname cost',
             });
-    
+
           if (!productData) {
             throw new Error(`Product with ID ${productId} not found`);
           }
-    
+
           // Calculate total cost
           let totalCost = 0;
           for (const material of productData.rawMaterialsUsed) {
             totalCost += material.rawId.cost * material.qtyUsed;
           }
           totalCost = parseFloat(totalCost.toFixed(2)); // Ensure totalCost is a number with two decimal places
-    
+
           // Update cost in itemsModel (do not increment)
           await itemsModel.findByIdAndUpdate(productId, { cost: totalCost });
-    
+
           // Loop through raw materials and update stock
           for (const material of productData.rawMaterialsUsed) {
             const { rawId, qtyUsed } = material;
-    
+
             // Find stock entry for each raw material
             let rawMaterialStock = await stockModel.findOne({ productId: rawId, warehouseId: whareid });
-    
+
             if (!rawMaterialStock) {
               // If no stock entry exists, create a new one
               rawMaterialStock = new stockModel({ productId: rawId, warehouseId: whareid, quantity: -qtyUsed * qty, sellerid: sellerId });
@@ -5930,12 +6037,12 @@ const resolvers = {
               // If stock entry exists, update the quantity
               rawMaterialStock.quantity -= qtyUsed * qty;
             }
-    
+
             // Save stock changes
             await rawMaterialStock.save();
           }
         }
-    
+
         return {
           ...populatedProduction._doc,
           createdAt: savedProduction.createdAt.toISOString(),
@@ -5944,7 +6051,7 @@ const resolvers = {
         console.error("Error adding production:", error);
         throw new Error(`Error adding production: ${error.message}`);
       }
-    },    
+    },
     deleteproductionDo: async (_, args, context) => {
       const { userId, role } = context;
       if (!userId) {
@@ -5953,29 +6060,29 @@ const resolvers = {
       if (role === 'subuser') {
         throw new Error("You do not have permission to delete categories. Please contact an admin.");
       }
-    
+
       // Find the production entry to delete
       const productionToDelete = await productionModel.findById(args.id).populate({
         path: 'prodcart.productId',
         select: '_id productname'
       });
-    
+
       if (!productionToDelete) {
         throw new Error("Production entry not found");
       }
-    
+
       // Loop through each prodcart item to update stock quantities
       for (const item of productionToDelete.prodcart) {
         const { productId, qty } = item;
         let stock = await stockModel.findOne({ productId, warehouseId: productionToDelete.whareid });
-    
+
         if (stock) {
           // Decrease the quantity of the finished product
           stock.quantity -= qty;
-    
+
           // Save stock changes
           await stock.save();
-    
+
           // Fetch product data to update raw materials stock
           const productData = await productionListModel
             .findOne({ productId })
@@ -5984,19 +6091,19 @@ const resolvers = {
               path: 'rawMaterialsUsed.rawId',
               select: '_id productname cost',
             });
-    
+
           if (productData) {
             // Loop through stock and update quantity for raw materials
             for (const material of productData.rawMaterialsUsed) {
               const { rawId, qtyUsed } = material;
-    
+
               // Find stock entry for each raw material
               let rawMaterialStock = await stockModel.findOne({ productId: rawId, warehouseId: productionToDelete.whareid });
-    
+
               if (rawMaterialStock) {
                 // Increase the quantity of raw materials
                 rawMaterialStock.quantity += qtyUsed;
-    
+
                 // Save stock changes
                 await rawMaterialStock.save();
               }
@@ -6004,10 +6111,10 @@ const resolvers = {
           }
         }
       }
-    
+
       // Delete the production entry
       await productionModel.findByIdAndDelete(args.id);
-    
+
       return "Production entry deleted successfully";
     },
     updateItemFields: async () => {
@@ -6049,7 +6156,50 @@ const resolvers = {
         return 'An error occurred while updating fields.';
       }
     },
-    
+    deleteSellerData: async (_, { sellerid }, context) => {
+      const { userId, role } = context;
+      if (!userId) {
+        throw new Error("You must be logged in");
+      }
+      if (role === 'subuser') {
+        throw new Error("You do not have permission to delete . Please contact an admin.");
+      }
+      try {
+        await userModel.updateMany({ sellerid }, { $set: { verified: false } });
+        // Delete related records by sellerid
+        await categoryModel.deleteMany({ sellerid });
+        await brandsModel.deleteMany({ sellerid });
+        await unitsModel.deleteMany({ sellerid });
+        await warehouseModel.deleteMany({ sellerid });
+        await itemsModel.deleteMany({ sellerid });
+        await TaskModel.deleteMany({ sellerid });
+        await billSaleModel.deleteMany({ sellerid });
+        await billSaleReturnModel.deleteMany({ sellerid });
+        await billPurchaseModel.deleteMany({ sellerid });
+        await billPurchaseReturnModel.deleteMany({ sellerid });
+        await ProjectModel.deleteMany({ sellerid });
+        await expenseEntryModel.deleteMany({ sellerid });
+        await partyEntryModel.deleteMany({ sellerid });
+        await billOrdersModel.deleteMany({ sellerid });
+        await billAdjustmentsModel.deleteMany({ sellerid });
+        await billTransfersModel.deleteMany({ sellerid });
+        await stockModel.deleteMany({ sellerid });
+        await kitchenModel.deleteMany({ sellerid });
+        await chefModel.deleteMany({ sellerid });
+        await riderModel.deleteMany({ sellerid });
+        await waiterModel.deleteMany({ sellerid });
+        await tableModel.deleteMany({ sellerid });
+        await billWasteModel.deleteMany({ sellerid });
+        await productionListModel.deleteMany({ sellerid });
+        await productionModel.deleteMany({ sellerid });
+        await expensecategoryModel.deleteMany({ sellerid });
+        // You can add any other models that have a sellerid field
+        return `All records related to sellerid: ${sellerid} have been deleted.`;
+      } catch (error) {
+        console.error(error);
+        throw new Error('Error deleting records.');
+      }
+    },
   },
 
 };
