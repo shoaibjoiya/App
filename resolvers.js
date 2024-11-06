@@ -2489,53 +2489,72 @@ const resolvers = {
         return null;
       }
     },
+    
     getStocks: async (_, { warehouseId, cateid, brandid, page }, context) => {
-
-
       try {
-        const { userId, sellerId } = context;
+        const { sellerId } = context; // Extract sellerId from context
+        if (!sellerId) {
+          throw new Error('Seller ID is required.');
+        }
+    
+        // Build the query object based on provided filters
         let query = {};
-
-        // If warehouseId is provided, add it to the query
+    
+        // Filter by warehouse ID
         if (warehouseId) {
-          query.warehouseId = warehouseId;
+          query.warehouseId = new mongoose.Types.ObjectId(warehouseId);
         }
-
-        // If cateid is provided, add it to the query
-        if (cateid) {
-          query['productId.cateid'] = cateid;
-        }
-
-        // If brandid is provided, add it to the query
-        if (brandid) {
-          query['productId.brandid'] = brandid;
-        }
+    
+        // Filter by seller ID (if sellerId is available in context)
         if (sellerId) {
-          query.sellerid = sellerId;
+          query.sellerid = new mongoose.Types.ObjectId(sellerId);
         }
+    
+       // console.log("Query:", query); // Debugging the query
+    
+        // Execute the initial query and populate brand/category
         const stockItems = await stockModel
           .find(query)
           .populate({
             path: 'productId',
-            populate: {
-              path: 'brandid',
-              model: 'brandsModel' // Adjust the model name if needed
-            }
-          }).sort({ createdAt: -1 })
+            populate: [
+              { path: 'brandid', model: 'brandsModel' },
+              { path: 'cateid', model: 'categoryModel' }
+            ]
+          })
+          .sort({ createdAt: -1 })
           .skip((page - 1) * 10)
           .limit(10);
-        const totalCount = await stockModel.countDocuments(query);
-
-        return { stockItems, totalCount };
-
-        // const stockItems = await stockModel.find(query).populate('productId');
-        // return stockItems;
+    
+        // Perform brand and category filtering post-population
+        let filteredStockItems = stockItems;
+    
+        // Filter by category ID (post-populate)
+        if (cateid) {
+          filteredStockItems = filteredStockItems.filter(item => 
+            item.productId.cateid && item.productId.cateid._id.toString() === cateid
+          );
+        }
+    
+        // Filter by brand ID (post-populate)
+        if (brandid) {
+          filteredStockItems = filteredStockItems.filter(item => 
+            item.productId.brandid && item.productId.brandid._id.toString() === brandid
+          );
+        }
+    
+        // Get the total count after filtering
+        const totalCount = filteredStockItems.length;
+    
+       // console.log(totalCount); // Debugging
+        return { stockItems: filteredStockItems, totalCount };
+    
       } catch (error) {
         console.error('Error fetching stock items:', error);
         throw error;
       }
-
     },
+   
     searchSales: async (_, { criteria }) => {
       const query = {};
 
@@ -3655,6 +3674,7 @@ const resolvers = {
         throw new Error("Cannot delete items as it is referenced in Sale");
       }
       await itemsModel.findByIdAndDelete(args.id);
+      await stockModel.findByIdAndDelete(args.id);
       return "Items Delte successfully"
     },
     deleteBillWaste: async (_, { id }, context) => {
